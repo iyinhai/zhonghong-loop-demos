@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>陪跑账本 · 陈秋燕</title>
+<style>
+  :root{
+    --paper:#FBF8F1; --paper2:#F4EFE3; --ink:#1F2F2B; --deep:#004B3A;
+    --green:#00A758; --gold:#C89A3A; --grey:#7B918A; --coral:#A7655F; --mist:#DDEDE7;
+    --hair:rgba(200,154,58,.38);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"PingFang SC","Hiragino Sans GB",sans-serif;
+    background-image:
+      linear-gradient(rgba(200,154,58,.05) 1px, transparent 1px);
+    background-size:100% 34px;
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif}
+  .page{max-width:1040px; margin:0 auto; padding:0 32px 120px}
+
+  /* ——— 顶栏 ——— */
+  .topbar{
+    position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px;
+    padding:16px 0 14px; background:linear-gradient(var(--paper) 82%, rgba(251,248,241,0));
+  }
+  .topbar .name{font-size:13px; letter-spacing:.2em; color:var(--deep); font-weight:600}
+  .topbar .date{margin-left:auto; text-align:right; color:var(--grey); font-size:12px; line-height:1.5}
+  .topbar .date b{display:block; color:var(--ink); font-size:13px; letter-spacing:.1em}
+  .ring{display:flex; align-items:center; gap:8px}
+  .ring small{color:var(--grey); font-size:10px; letter-spacing:.14em}
+
+  /* ——— 章节 ——— */
+  section{margin-top:88px; opacity:0; transform:translateY(26px); transition:opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1)}
+  section.shown{opacity:1; transform:none}
+  .chap{display:flex; align-items:baseline; gap:14px; margin-bottom:10px}
+  .chap-no{font-family:"Songti SC",serif; font-size:15px; color:var(--gold); border:1px solid var(--hair); border-radius:50%; width:34px; height:34px; display:grid; place-items:center; flex:none; transform:translateY(4px)}
+  .chap h2{font-family:"Songti SC",serif; font-size:26px; color:var(--deep); font-weight:700}
+  .chap-line{flex:1; height:1px; background:var(--hair); transform:translateY(-6px)}
+  .chap-sub{color:var(--grey); font-size:13.5px; line-height:1.9; max-width:620px; margin:6px 0 30px 48px}
+
+  /* ——— 卷首 ——— */
+  .hero{margin-top:64px}
+  .hero .morning{display:inline-flex; align-items:center; gap:9px; font-size:12px; color:var(--gold); letter-spacing:.3em; margin-bottom:22px}
+  .hero h1{font-family:"Songti SC",serif; font-size:clamp(34px,5vw,56px); color:var(--deep); line-height:1.3; font-weight:700}
+  .hero h1 em{font-style:normal; position:relative; white-space:nowrap}
+  .hero h1 em::after{content:""; position:absolute; left:0; right:0; bottom:4px; height:8px; background:rgba(200,154,58,.28); z-index:-1}
+  .hero p{margin-top:20px; color:var(--grey); font-size:15.5px; line-height:2; max-width:560px}
+
+  /* ——— 双轨图 ——— */
+  .ledger-card{
+    background:#fff; border:1px solid rgba(27,53,46,.1); border-radius:18px;
+    box-shadow:0 22px 48px -30px rgba(23,53,46,.28); padding:30px 34px 26px; position:relative;
+  }
+  .ledger-card::before{content:""; position:absolute; left:22px; top:0; bottom:0; width:1px; background:rgba(167,101,95,.25)}
+  .chart-head{display:flex; align-items:baseline; gap:16px; margin:0 0 8px 26px}
+  .chart-head b{font-size:14px; color:var(--ink)}
+  .chart-head .legend{margin-left:auto; display:flex; gap:18px; font-size:11.5px; color:var(--grey)}
+  .legend i{display:inline-block; width:22px; height:0; border-top:2px solid var(--green); margin-right:6px; transform:translateY(-3px)}
+  .legend i.dash{border-top:2px dashed var(--gold)}
+  #juneChart{width:100%; height:auto; display:block; margin-left:8px}
+  .chart-foot{display:flex; align-items:center; gap:18px; margin:10px 0 0 26px}
+  .replay{
+    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--deep); color:var(--deep);
+    background:transparent; border-radius:99px; padding:9px 18px; font-size:12.5px; letter-spacing:.08em; cursor:pointer;
+    transition:.25s;
+  }
+  .replay:hover{background:var(--deep); color:var(--paper)}
+  .day-ticker{font-family:Georgia,serif; font-size:13px; color:var(--gold); min-width:86px}
+
+  .stat-strip{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:26px}
+  .stat{background:transparent; border-top:1px solid var(--hair); padding:16px 4px 0}
+  .stat span{font-size:11.5px; color:var(--grey); letter-spacing:.1em}
+  .stat strong{display:block; font-family:Georgia,serif; font-size:30px; color:var(--deep); margin-top:6px}
+  .stat strong em{font-style:normal; font-size:14px; color:var(--grey); margin-left:4px}
+  .stat .up{color:var(--green); font-size:12px; margin-left:8px}
+  .stat .gap{color:var(--coral)}
+
+  /* ——— 校准 ——— */
+  .calibrate{margin-top:40px; display:flex; flex-direction:column; align-items:flex-start; gap:20px}
+  .cal-btn{
+    display:inline-flex; align-items:center; gap:10px; background:var(--deep); color:var(--paper);
+    border:none; border-radius:99px; padding:14px 26px; font-size:14px; letter-spacing:.1em; cursor:pointer;
+    box-shadow:0 14px 30px -16px rgba(0,75,58,.6); transition:.25s;
+  }
+  .cal-btn:hover{transform:translateY(-2px)}
+  .cal-btn:disabled{opacity:.35; cursor:default; transform:none}
+  .coef{
+    display:none; align-items:center; gap:26px; background:#fff; border:1px solid rgba(27,53,46,.1);
+    border-radius:16px; padding:22px 28px; position:relative; width:100%;
+  }
+  .coef.on{display:flex; animation:rise .8s cubic-bezier(.2,.8,.2,1)}
+  @keyframes rise{from{opacity:0; transform:translateY(18px)}to{opacity:1}}
+  .coef .from,.coef .to{text-align:center}
+  .coef .from span,.coef .to span{display:block; font-size:11px; color:var(--grey); letter-spacing:.12em; margin-bottom:6px}
+  .coef .from b{font-family:Georgia,serif; font-size:26px; color:var(--grey); text-decoration:line-through; text-decoration-color:rgba(167,101,95,.6)}
+  .coef .to b{font-family:Georgia,serif; font-size:34px; color:var(--green)}
+  .coef .arrow{color:var(--gold); font-size:20px}
+  .coef .why{font-size:13px; color:var(--ink); line-height:1.85; border-left:2px solid var(--gold); padding-left:16px; max-width:380px}
+  .stamp{
+    position:absolute; right:22px; top:50%; width:96px; height:96px; margin-top:-48px;
+    border:2.5px solid var(--gold); border-radius:50%; display:grid; place-items:center;
+    color:var(--gold); transform:rotate(-8deg) scale(3); opacity:0; pointer-events:none;
+  }
+  .stamp::before{content:""; position:absolute; inset:5px; border:1px solid var(--gold); border-radius:50%}
+  .stamp b{font-family:"Songti SC",serif; font-size:19px; letter-spacing:.2em; text-indent:.2em}
+  .stamp small{font-size:8.5px; letter-spacing:.1em; margin-top:2px}
+  .stamp.hit{animation:stampIn .55s cubic-bezier(.2,1.4,.4,1) forwards}
+  @keyframes stampIn{to{transform:rotate(-8deg) scale(1); opacity:1}}
+
+  /* ——— 七月新页 ——— */
+  .newpage{transition:opacity 1s, transform 1s}
+  .newpage.locked{opacity:.28; filter:saturate(.4); pointer-events:none; transform:none}
+  .target-row{display:flex; align-items:baseline; gap:14px; margin:0 0 24px 26px}
+  .target-row span{font-size:12.5px; color:var(--grey)}
+  .target-row b{font-family:Georgia,serif; font-size:34px; color:var(--deep)}
+  .target-row .same{font-size:11px; color:var(--gold); border:1px solid var(--hair); padding:3px 10px; border-radius:99px}
+  .income-bar{display:flex; height:54px; border-radius:12px; overflow:hidden; margin:0 0 12px 26px; box-shadow:inset 0 0 0 1px rgba(27,53,46,.08)}
+  .income-bar i{display:block; height:100%; width:0; transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+  .income-legend{display:flex; flex-wrap:wrap; gap:8px 22px; margin:0 0 8px 26px; font-size:12px; color:var(--grey)}
+  .income-legend b{color:var(--ink); font-family:Georgia,serif; margin-left:5px}
+  .income-legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:7px; transform:translateY(1px)}
+  .income-total{margin:4px 0 34px 26px; font-size:13px; color:var(--grey)}
+  .income-total b{font-family:Georgia,serif; font-size:22px; color:var(--deep); margin:0 4px}
+  .actions{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-left:26px}
+  .act{background:var(--paper2); border:1px solid rgba(27,53,46,.08); border-radius:14px; padding:20px 20px 18px; text-align:center; position:relative}
+  .act span{font-size:12px; color:var(--grey); letter-spacing:.1em}
+  .act .old{display:block; font-family:Georgia,serif; font-size:15px; color:var(--grey); text-decoration:line-through; text-decoration-color:rgba(167,101,95,.55); margin-top:10px; transition:opacity .6s}
+  .act .new{display:block; font-family:Georgia,serif; font-size:38px; color:var(--deep); margin-top:2px}
+  .act .new em{font-style:normal; font-size:13px; color:var(--grey)}
+  .act .down{position:absolute; top:14px; right:14px; font-size:11px; color:var(--green); opacity:0; transition:opacity .8s .5s}
+  .calibrated .act .down{opacity:1}
+  .punchline{margin:30px 0 0 26px; font-family:"Songti SC",serif; font-size:19px; color:var(--deep); line-height:1.9}
+  .punchline::before{content:""; display:block; width:36px; height:2px; background:var(--gold); margin-bottom:14px}
+
+  /* ——— 成长 ——— */
+  .growth{display:grid; grid-template-columns:1.2fr .8fr; gap:26px; align-items:stretch}
+  @media(max-width:820px){.growth{grid-template-columns:1fr}}
+  .book{background:#fff; border:1px solid rgba(27,53,46,.1); border-radius:16px; padding:24px 26px}
+  .book h3{font-family:"Songti SC",serif; font-size:17px; color:var(--deep); margin-bottom:4px}
+  .book small{color:var(--grey); font-size:11.5px}
+  .months{display:flex; align-items:flex-end; gap:14px; height:130px; margin-top:22px; padding:0 6px}
+  .month{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px}
+  .month i{width:100%; border-radius:6px 6px 3px 3px; background:linear-gradient(180deg,var(--green),#00874A); height:0; transition:height 1s cubic-bezier(.2,.8,.2,1); box-shadow:0 6px 14px -8px rgba(0,167,88,.7)}
+  .month.cur i{background:linear-gradient(180deg,var(--gold),#B3892F)}
+  .month b{font-family:Georgia,serif; font-size:13px; color:var(--deep)}
+  .month span{font-size:10.5px; color:var(--grey)}
+  .creed{background:var(--deep); color:var(--paper); border-radius:16px; padding:28px 28px; display:flex; flex-direction:column; justify-content:center}
+  .creed .serif{font-size:22px; line-height:1.9; color:#F3EDDC}
+  .creed p{margin-top:16px; font-size:12.5px; color:rgba(251,248,241,.62); line-height:1.9}
+
+  /* ——— 合环 ——— */
+  .close-loop{margin-top:110px; text-align:center}
+  .close-loop svg{margin:0 auto; display:block}
+  .close-loop .serif{font-size:24px; color:var(--deep); margin-top:30px; line-height:1.9}
+  .close-loop p{color:var(--grey); font-size:13px; margin-top:12px; letter-spacing:.06em}
+  .back{display:inline-block; margin-top:36px; color:var(--grey); font-size:12px; text-decoration:none; border-bottom:1px solid var(--hair); padding-bottom:3px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="ring">
+      <svg width="30" height="30" viewBox="0 0 30 30">
+        <circle cx="15" cy="15" r="12" fill="none" stroke="#C89A3A" stroke-width="1" opacity=".5"/>
+        <g id="ringDots"></g>
+      </svg>
+      <small>环 · 第⑥步<br/>回流</small>
+    </div>
+    <div class="name">陪跑账本 · 厦门新人面谈</div>
+    <div class="date">7月1日 星期四<b>早晨 8:12</b></div>
+  </header>
+
+  <!-- 卷首 -->
+  <section class="hero shown" style="margin-top:56px">
+    <div class="morning">☀&nbsp;&nbsp;第二天早晨 · 它记得你</div>
+    <h1>早，秋燕。<br/>七月的账本，<em>已经替你翻开了</em>。</h1>
+    <p>上一页的故事，我写在了新一页的开头——六月你和林晓定下的 60 个有效拜访，完成了 47 个。别急着皱眉，先往下看，这次有个好消息。</p>
+  </section>
+
+  <!-- 壹 · 上一页的结尾 -->
+  <section id="ch1">
+    <div class="chap"><span class="chap-no">壹</span><h2>上一页的结尾：六月回放</h2><span class="chap-line"></span></div>
+    <p class="chap-sub">定目标时画下的是虚线，走过来的是实线。每个月底，两条线都要见一面。</p>
+    <div class="ledger-card">
+      <div class="chart-head">
+        <b>林晓 · 六月有效拜访</b>
+        <div class="legend"><span><i class="dash"></i>目标节奏</span><span><i></i>实际完成</span></div>
+      </div>
+      <svg id="juneChart" viewBox="0 0 920 300"></svg>
+      <div class="chart-foot">
+        <button class="replay" id="replayBtn">▶&nbsp;&nbsp;回放六月</button>
+        <span class="day-ticker" id="dayTicker"></span>
+      </div>
+    </div>
+    <div class="stat-strip">
+      <div class="stat"><span>有效拜访完成</span><strong>47<em>/ 60</em><span class="gap">▼ 未达标</span></strong></div>
+      <div class="stat"><span>真实转化率（拜访→计划书）</span><strong>8.4%<span class="up">▲ 高于预估</span></strong></div>
+      <div class="stat"><span>模型原预估转化率</span><strong>7.1%<em>行业参考值</em></strong></div>
+    </div>
+    <div class="calibrate">
+      <button class="cal-btn" id="calBtn">用六月真实数据，校准七月 →</button>
+      <div class="coef" id="coefCard">
+        <div class="from"><span>原系数 · 行业参考</span><b>7.1%</b></div>
+        <div class="arrow">⟶</div>
+        <div class="to"><span>新系数 · 林晓真实</span><b>8.4%</b></div>
+        <div class="why">上个月林晓每 100 次拜访递出 8.4 份计划书，比行业参考值高 18%。七月的目标拆解，该用<b>她自己的脚力</b>来算了。</div>
+        <div class="stamp" id="stamp"><div><b>已校准</b><small>6月真实数据</small></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 贰 · 七月新页 -->
+  <section id="ch2" class="newpage locked">
+    <div class="chap"><span class="chap-no">贰</span><h2>七月的新一页：目标没变，要求变少了</h2><span class="chap-line"></span></div>
+    <p class="chap-sub">同样的保费目标，用校准后的系数重新拆解——这是「它记得你」最直接的证据。</p>
+    <div class="ledger-card">
+      <div class="target-row">
+        <span>七月保费目标</span><b>¥30,000</b><span class="same">与六月相同</span>
+      </div>
+      <div class="income-bar" id="incomeBar">
+        <i data-w="56.8" style="background:#004B3A"></i>
+        <i data-w="20.3" style="background:#00A758"></i>
+        <i data-w="13.4" style="background:#C89A3A"></i>
+        <i data-w="9.5"  style="background:#A7655F"></i>
+      </div>
+      <div class="income-legend">
+        <span><i style="background:#004B3A"></i>基础佣金<b>5,100</b></span>
+        <span><i style="background:#00A758"></i>月度达标奖<b>1,820</b></span>
+        <span><i style="background:#C89A3A"></i>宏才新人津贴<b>1,200</b></span>
+        <span><i style="background:#A7655F"></i>叠加专属激励<b>860</b></span>
+      </div>
+      <div class="income-total">累计税前总收入 <b>¥8,980</b> ＋ 破壁机一台、省内短途游名额、开单礼品</div>
+      <div class="actions">
+        <div class="act"><span class="down">▼ 少了 28 通</span><span>电话约访</span><span class="old">180 通</span><span class="new" data-n="152">180</span><em style="font-size:12px;color:var(--grey)">通 / 月</em></div>
+        <div class="act"><span class="down">▼ 少了 9 次</span><span>有效拜访</span><span class="old">60 次</span><span class="new" data-n="51">60</span><em style="font-size:12px;color:var(--grey)">次 / 月</em></div>
+        <div class="act"><span class="down">▼ 少了 4 份</span><span>计划书递送</span><span class="old">30 份</span><span class="new" data-n="26">30</span><em style="font-size:12px;color:var(--grey)">份 / 月</em></div>
+      </div>
+      <p class="punchline">目标没有降低，要求反而变少了——<br/>因为这一次，是按林晓自己的转化率算的。</p>
+    </div>
+  </section>
+
+  <!-- 叁 · 人的成长 -->
+  <section id="ch3">
+    <div class="chap"><span class="chap-no">叁</span><h2>账本的最后一栏，永远写人</h2><span class="chap-line"></span></div>
+    <p class="chap-sub">这条环上被测量的不是 AI 多能干，而是人有没有变强。</p>
+    <div class="growth">
+      <div class="book">
+        <h3>林晓 · 行动达成率（三月 → 七月）</h3>
+        <small>每一次面谈后的真实回填</small>
+        <div class="months" id="months">
+          <div class="month"><i data-h="34"></i><b>54%</b><span>3月</span></div>
+          <div class="month"><i data-h="44"></i><b>63%</b><span>4月</span></div>
+          <div class="month"><i data-h="52"></i><b>71%</b><span>5月</span></div>
+          <div class="month"><i data-h="60"></i><b>78%</b><span>6月</span></div>
+          <div class="month cur"><i data-h="70"></i><b>？</b><span>7月</span></div>
+        </div>
+      </div>
+      <div class="creed">
+        <div class="serif">「它不是替我把目标算完的计算器，<br/>是每个月陪我跑完、<br/>下个月站在起点等我的那个人。」</div>
+        <p>—— 升级后的定位：从「面谈利益测算工具」到「陪跑账本」。人做判断，AI 记账，下月带着记忆回来。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 合环 -->
+  <section class="close-loop" id="ch4">
+    <svg width="340" height="340" viewBox="0 0 340 340" id="loopSvg">
+      <circle cx="170" cy="170" r="128" fill="none" stroke="#C89A3A" stroke-width="1" opacity=".4" stroke-dasharray="3 6"/>
+      <circle id="loopProgress" cx="170" cy="170" r="128" fill="none" stroke="#00A758" stroke-width="2.2" stroke-linecap="round"
+        stroke-dasharray="804" stroke-dashoffset="804" transform="rotate(-90 170 170)"/>
+      <g id="loopNodes"></g>
+      <text x="170" y="163" text-anchor="middle" font-size="13" fill="#7B918A" letter-spacing="2">六月的行动</text>
+      <text x="170" y="185" text-anchor="middle" font-size="13" fill="#004B3A" letter-spacing="2">变成七月的系数</text>
+    </svg>
+    <div class="serif">环，合上了。<br/>下个月 1 号早晨，它会带着这一页，再来找你。</div>
+    <p>理念层 · 一条环 ｜ 语义层 · 信号→理解→行动→资产→回流→成长 ｜ 表现层 · 只属于陈秋燕的陪跑账本</p>
+    <a class="back" href="/">← 回到两扇门</a>
+  </section>
+
+</div>
+
+<script>
+/* ——— 顶栏小环 ——— */
+(function(){
+  const g = document.getElementById('ringDots');
+  for(let i=0;i<6;i++){
+    const a = -Math.PI/2 + i*Math.PI/3;
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', 15+12*Math.cos(a)); c.setAttribute('cy', 15+12*Math.sin(a));
+    c.setAttribute('r', i===5?2.6:1.5);
+    c.setAttribute('fill', i===5?'#00A758':'#C89A3A'); c.setAttribute('opacity', i===5?1:.55);
+    g.appendChild(c);
+  }
+})();
+
+/* ——— 六月双轨图 ——— */
+const NS='http://www.w3.org/2000/svg';
+const chart=document.getElementById('juneChart');
+const W=920,H=300,PL=54,PR=24,PT=26,PB=42;
+const days=30, target=60, actual=47;
+// 实际曲线：前快、月中停滞、月末冲刺（有故事的形状）
+const ratio=[0,.06,.13,.2,.27,.33,.38,.44,.49,.53,.57,.6,.63,.66,.69,.72,.74,.76,.78,.8,.82,.84,.86,.88,.9,.92,.94,.96,.98,1];
+function X(d){return PL+(W-PL-PR)*(d-1)/(days-1)}
+function Y(v){return PT+(H-PT-PB)*(1-v/(target*1.12))}
+function path(arr,scale){
+  return arr.map((r,i)=>`${i?'L':'M'}${X(i+1).toFixed(1)},${Y(r*scale).toFixed(1)}`).join(' ');
+}
+(function drawBase(){
+  // 网格
+  for(let v=0;v<=60;v+=15){
+    const l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',PL);l.setAttribute('x2',W-PR);l.setAttribute('y1',Y(v));l.setAttribute('y2',Y(v));
+    l.setAttribute('stroke','rgba(27,53,46,.08)');chart.appendChild(l);
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',PL-10);t.setAttribute('y',Y(v)+4);t.setAttribute('text-anchor','end');
+    t.setAttribute('font-size','11');t.setAttribute('fill','#7B918A');t.textContent=v;chart.appendChild(t);
+  }
+  [1,7,14,21,30].forEach(d=>{
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',X(d));t.setAttribute('y',H-14);t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size','11');t.setAttribute('fill','#7B918A');t.textContent='6/'+d;chart.appendChild(t);
+  });
+  // 目标虚线
+  const tp=document.createElementNS(NS,'path');
+  tp.setAttribute('d',`M${X(1)},${Y(target/days)} L${X(days)},${Y(target)}`);
+  tp.setAttribute('stroke','#C89A3A');tp.setAttribute('stroke-width','2');tp.setAttribute('stroke-dasharray','5 6');
+  tp.setAttribute('fill','none');chart.appendChild(tp);
+  // 终点标记 60
+  const dt=document.createElementNS(NS,'text');
+  dt.setAttribute('x',X(days));dt.setAttribute('y',Y(target)-10);dt.setAttribute('text-anchor','end');
+  dt.setAttribute('font-size','12');dt.setAttribute('fill','#C89A3A');dt.textContent='目标 60';chart.appendChild(dt);
+})();
+const actPath=document.createElementNS(NS,'path');
+actPath.setAttribute('stroke','#00A758');actPath.setAttribute('stroke-width','2.6');actPath.setAttribute('fill','none');
+actPath.setAttribute('stroke-linecap','round');actPath.setAttribute('stroke-linejoin','round');
+chart.appendChild(actPath);
+const dot=document.createElementNS(NS,'circle');
+dot.setAttribute('r','4.5');dot.setAttribute('fill','#00A758');dot.setAttribute('opacity','0');
+chart.appendChild(dot);
+const dotLabel=document.createElementNS(NS,'text');
+dotLabel.setAttribute('text-anchor','middle');dotLabel.setAttribute('font-size','13');dotLabel.setAttribute('fill','#004B3A');
+dotLabel.setAttribute('font-weight','600');dotLabel.setAttribute('opacity','0');
+chart.appendChild(dotLabel);
+
+let playing=false;
+function renderJune(frac){
+  const n=Math.max(2,Math.round(1+frac*(days-1)));
+  const seg=ratio.slice(0,n).map((r,i)=>{
+    const partial = i===n-1 ? (1+frac*(days-1))-(n-1) : 1;
+    return r;
+  });
+  // 逐日插值
+  let d=`M${X(1)},${Y(0)}`;
+  for(let i=2;i<=n;i++){
+    let f = i<n?1:(1+frac*(days-1))-(n-2);
+    f=Math.min(1,Math.max(0,f));
+    const rPrev=ratio[i-2]*actual, rCur=ratio[i-1]*actual;
+    const r=rPrev+(rCur-rPrev)*f;
+    const x=X(i-1)+(X(i)-X(i-1))*f;
+    d+=` L${x.toFixed(1)},${Y(r).toFixed(1)}`;
+  }
+  actPath.setAttribute('d',d);
+  const curDay=Math.min(days,Math.round(frac*days));
+  const curVal=ratio[Math.min(29,Math.round(frac*29))]*actual;
+  dot.setAttribute('cx',X(Math.max(1,frac*(days-1)+1)));dot.setAttribute('cy',Y(curVal));dot.setAttribute('opacity','1');
+  document.getElementById('dayTicker').textContent = frac>0?`6月${Math.max(1,curDay)}日`:'';
+  if(frac>=1){
+    dotLabel.setAttribute('x',X(days)-4);dotLabel.setAttribute('y',Y(actual)-12);
+    dotLabel.textContent='47';dotLabel.setAttribute('opacity','1');
+  }
+}
+renderJune(0);
+document.getElementById('replayBtn').addEventListener('click',()=>{
+  if(playing)return; playing=true;
+  dotLabel.setAttribute('opacity','0');
+  const t0=performance.now(),dur=2600;
+  (function step(t){
+    const f=Math.min(1,(t-t0)/dur);
+    renderJune(f<0.5?2*f*f:1-Math.pow(-2*f+2,2)/2);
+    if(f<1)requestAnimationFrame(step);else playing=false;
+  })(t0);
+});
+
+/* ——— 校准 ——— */
+const calBtn=document.getElementById('calBtn');
+calBtn.addEventListener('click',()=>{
+  calBtn.disabled=true; calBtn.textContent='已用六月真实数据校准 ✓';
+  const card=document.getElementById('coefCard'); card.classList.add('on');
+  setTimeout(()=>document.getElementById('stamp').classList.add('hit'),450);
+  // 解锁七月
+  const ch2=document.getElementById('ch2');
+  setTimeout(()=>{
+    ch2.classList.remove('locked'); ch2.classList.add('calibrated');
+    ch2.scrollIntoView({behavior:'smooth',block:'start'});
+    // 收入条
+    document.querySelectorAll('#incomeBar i').forEach(i=>i.style.width=i.dataset.w+'%');
+    // 行动指标数字
+    document.querySelectorAll('.act .new').forEach(el=>{
+      const to=+el.dataset.n, from=+el.textContent, t0=performance.now(),dur=1400;
+      (function tw(t){
+        const f=Math.min(1,Math.max(0,(t-t0)/dur)), e=1-Math.pow(1-f,3);
+        el.textContent=Math.round(from+(to-from)*e);
+        if(f<1)requestAnimationFrame(tw);
+      })(t0);
+    });
+  },900);
+});
+
+/* ——— 滚动显现 ——— */
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){
+    e.target.classList.add('shown');
+    if(e.target.id==='ch3'){
+      document.querySelectorAll('.month i').forEach((i,k)=>setTimeout(()=>i.style.height=i.dataset.h+'%',k*120));
+    }
+    if(e.target.id==='ch4'){
+      const p=document.getElementById('loopProgress');
+      p.style.transition='stroke-dashoffset 2.6s cubic-bezier(.2,.8,.2,1)';
+      requestAnimationFrame(()=>p.style.strokeDashoffset='0');
+    }
+    io.unobserve(e.target);
+  }
+}),{threshold:.18});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+
+/* ——— 合环节点 ——— */
+(function(){
+  const g=document.getElementById('loopNodes');
+  const labels=['信号','理解','行动','复盘','资产','回流'];
+  for(let i=0;i<6;i++){
+    const a=-Math.PI/2+i*Math.PI/3;
+    const x=170+128*Math.cos(a), y=170+128*Math.sin(a);
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',i===5?15:11);
+    c.setAttribute('fill',i===5?'#00A758':'#FBF8F1');
+    c.setAttribute('stroke',i===5?'#00A758':'#C89A3A');c.setAttribute('stroke-width','1.4');
+    g.appendChild(c);
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x);t.setAttribute('y',y+3.6);t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size',i===5?'10':'9');
+    t.setAttribute('fill',i===5?'#FBF8F1':'#7B918A');t.textContent=labels[i];
+    g.appendChild(t);
+  }
+})();
+/* ——— 自检钩子：#demo1 回放完成 → 校准；#demo2 直接呈现校准后七月 ——— */
+(function(){
+  const h=location.hash;
+  if(h.startsWith('#demo')){
+    const st=document.createElement('style');
+    st.textContent='*{transition:none!important}';
+    document.head.appendChild(st);
+  }
+  if(h==='#demo1'||h==='#demo2'){
+    renderJune(1);
+    setTimeout(()=>calBtn.click(), h==='#demo2'?100:600);
+  }
+  if(h==='#demo2'){
+    setTimeout(()=>{
+      // 直接呈现校准后终态（截图/录屏自检用，跳过动画时序）
+      calBtn.disabled=true; calBtn.textContent='已用六月真实数据校准 ✓';
+      document.getElementById('coefCard').classList.add('on');
+      document.getElementById('stamp').classList.add('hit');
+      const ch2=document.getElementById('ch2');
+      ch2.classList.remove('locked'); ch2.classList.add('calibrated','shown');
+      ch2.style.opacity='1'; ch2.style.transform='none';
+      document.getElementById('ch1').classList.add('shown');
+      document.querySelectorAll('#incomeBar i').forEach(i=>{i.style.transition='none';i.style.width=i.dataset.w+'%';});
+      document.querySelectorAll('.act .new').forEach(el=>el.textContent=el.dataset.n);
+      document.querySelector('.hero').style.display='none';
+      document.getElementById('ch1').style.display='none';
+      window.scrollTo({top:0, behavior:'auto'});
+    },300);
+  }
+  if(h==='#demo3'){
+    renderJune(1); calBtn.click();
+    setTimeout(()=>{ document.getElementById('ch3').classList.add('shown');
+      document.querySelectorAll('.month i').forEach((i,k)=>setTimeout(()=>i.style.height=i.dataset.h+'%',k*100));
+      window.scrollTo({top:document.getElementById('ch3').offsetTop-70, behavior:'auto'}); },1600);
+  }
+})();
+</script>
+</body>
+</html>
