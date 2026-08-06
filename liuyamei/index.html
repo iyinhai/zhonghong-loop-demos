@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客诉话术小助手 · 电波雷达站</title>
+<style>
+  :root{
+    --mistbg:#E9F2ED; --paper:#FBFDFB; --paper2:#F1F7F3;
+    --ink:#20302A; --ink2:#5E7369; --ink3:#8CA396;
+    --green:#00A758; --deep:#004B3A; --mist:#DDEDE7;
+    --gold:#C89A3A; --coral:#A7655F; --coralbg:#F7E9E4;
+    --line:rgba(20,60,45,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1000px 500px at 85% -8%, rgba(0,167,88,.10), transparent 60%),
+      radial-gradient(800px 500px at -10% 40%, rgba(200,154,58,.07), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(0,75,58,.035) 0 1px, transparent 1px 7px),
+      linear-gradient(165deg,#EFF6F1,#E2EEE7 55%,#EAF3EE);
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif;}
+  .num{font-family:Georgia,"Times New Roman",serif;}
+  .mono{font-family:"SF Mono",Menlo,monospace;}
+
+  .topbar{
+    position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:14px 34px;background:rgba(239,246,241,.86);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .loopmark{width:34px;height:34px;flex:none;}
+  .topbar .name{font-size:15px;font-weight:700;}
+  .topbar .world{font-size:11px;color:var(--ink2);letter-spacing:.28em;margin-top:2px;}
+  .topbar .spacer{flex:1;}
+  .badge-test{font-size:10.5px;letter-spacing:.14em;color:var(--coral);
+    border:1px solid rgba(167,101,95,.4);border-radius:999px;padding:4px 12px;
+    background:rgba(247,233,228,.6);white-space:nowrap;}
+  .backlink{font-size:12.5px;color:var(--ink2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .25s;white-space:nowrap;}
+  .backlink:hover{color:var(--deep);border-color:var(--deep);}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:0 34px;}
+  .rule{display:flex;align-items:center;gap:18px;margin:88px 0 46px;}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(200,154,58,.6));}
+  .rule::after{background:linear-gradient(90deg,rgba(200,154,58,.6),transparent);}
+  .rule .rt{font-size:11px;letter-spacing:.42em;color:var(--gold);white-space:nowrap;font-weight:600;}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 1px 2px rgba(15,45,32,.05),0 14px 34px -18px rgba(15,45,32,.25);}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .demo-static .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .demo-static *{animation:none!important;}
+
+  /* 第一幕 */
+  .hero{padding:84px 0 10px;}
+  .hero .morning{display:flex;align-items:baseline;gap:16px;}
+  .hero .clock{font-size:15px;color:var(--ink2);letter-spacing:.1em;}
+  .hero h1{font-size:52px;line-height:1.18;font-weight:700;margin-top:14px;}
+  .hero h1 em{font-style:normal;color:var(--deep);}
+  .hero .sub{margin-top:18px;font-size:15.5px;line-height:1.9;color:var(--ink2);max-width:660px;}
+  .hero .sub b{color:var(--ink);font-weight:600;}
+  .pushgrid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:18px;margin-top:44px;}
+  .push{padding:24px;}
+  .push .ptag{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.2em;color:var(--deep);font-weight:700;}
+  .push .ptag .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(0,167,88,.14);}
+  .push h3{font-size:18px;margin:12px 0 8px;font-weight:700;}
+  .push p{font-size:13.5px;line-height:1.85;color:var(--ink2);}
+  .push .big{font-size:34px;margin-top:6px;color:var(--deep);}
+  .humangate{margin-top:18px;padding:18px 22px;border-radius:16px;
+    background:linear-gradient(135deg,#004B3A,#013326);color:#EAF4EF;
+    display:flex;align-items:center;gap:16px;box-shadow:0 18px 40px -18px rgba(0,75,58,.55);}
+  .humangate .icon{flex:none;width:40px;height:40px;border-radius:50%;
+    border:1.5px solid rgba(234,244,239,.5);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .humangate .t1{font-size:13px;font-weight:700;letter-spacing:.06em;}
+  .humangate .t2{font-size:12px;opacity:.82;margin-top:4px;line-height:1.7;}
+
+  /* 第二幕：雷达台 */
+  .station{display:grid;grid-template-columns:1fr 400px 1fr;gap:18px;align-items:stretch;}
+  .callcard{padding:26px;display:flex;flex-direction:column;}
+  .callcard .ct{font-size:11px;letter-spacing:.3em;color:var(--ink3);font-weight:600;}
+  .sceneswitch{display:flex;gap:8px;margin:14px 0 16px;}
+  .spill{font-size:12px;padding:7px 14px;border-radius:999px;border:1px solid var(--line);
+    background:var(--paper2);color:var(--ink2);cursor:pointer;transition:all .3s;font-family:inherit;}
+  .spill.on{background:var(--deep);color:#F2F7F4;border-color:var(--deep);}
+  .spill:hover:not(.on){border-color:var(--deep);color:var(--deep);}
+  .callvoice{display:flex;align-items:flex-end;gap:3px;height:44px;margin:4px 0 14px;}
+  .callvoice i{flex:1;background:linear-gradient(180deg,var(--green),var(--deep));border-radius:2px;opacity:.85;
+    animation:vw 1.1s ease-in-out infinite alternate;}
+  @keyframes vw{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
+  .callvoice i{transform-origin:bottom;}
+  .calltext{font-size:14.5px;line-height:2.0;color:#3A4A43;background:var(--paper2);
+    border:1px solid var(--line);border-radius:14px;padding:16px 18px;flex:1;}
+  .calltext b{color:var(--coral);font-weight:600;background:linear-gradient(transparent 62%,rgba(167,101,95,.22) 62%);}
+  .callmeta{margin-top:12px;font-size:11.5px;color:var(--ink3);letter-spacing:.06em;}
+
+  .radarcard{padding:26px 20px;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden;}
+  .radarcard .ct{font-size:11px;letter-spacing:.3em;color:var(--ink3);font-weight:600;}
+  #radar{width:100%;max-width:330px;margin-top:6px;}
+  .scanbtn{margin-top:6px;display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;
+    color:#F4FBF7;background:linear-gradient(135deg,#00A758,#008348);border:none;border-radius:999px;
+    padding:12px 26px;cursor:pointer;font-family:inherit;box-shadow:0 14px 28px -12px rgba(0,167,88,.6);
+    transition:transform .25s;}
+  .scanbtn:hover{transform:translateY(-1px);}
+  .scanstat{margin-top:10px;font-size:11.5px;color:var(--ink2);letter-spacing:.06em;min-height:18px;}
+
+  .judcard{padding:26px;display:flex;flex-direction:column;}
+  .judcard .ct{font-size:11px;letter-spacing:.3em;color:var(--ink3);font-weight:600;}
+  .jres{margin-top:16px;opacity:0;transform:translateY(10px);transition:all .6s;}
+  .jres.show{opacity:1;transform:none;}
+  .demo-static .jres{opacity:1!important;transform:none!important;}
+  .jtype{font-size:30px;font-weight:800;color:var(--deep);letter-spacing:.02em;}
+  .jtype small{font-size:12px;color:var(--ink3);font-weight:500;margin-left:10px;letter-spacing:.1em;}
+  .jgauge{margin:16px 0 4px;}
+  .jemotion{font-size:13px;color:var(--ink2);display:flex;justify-content:space-between;}
+  .jemotion b{color:var(--coral);font-weight:700;}
+  .alertbar{margin-top:14px;border-radius:12px;padding:12px 15px;font-size:12.5px;line-height:1.75;
+    background:var(--coralbg);border:1px solid rgba(167,101,95,.45);color:#7A453E;display:none;}
+  .alertbar.show{display:block;}
+  .kwzone{margin-top:16px;}
+  .kwzone .kt{font-size:11px;letter-spacing:.2em;color:var(--ink3);font-weight:600;margin-bottom:9px;}
+  .kws{display:flex;flex-wrap:wrap;gap:7px;}
+  .kw{font-size:11.5px;padding:5px 11px;border-radius:8px;background:var(--mist);color:var(--deep);
+    font-weight:600;opacity:0;transform:scale(.8);transition:all .4s;}
+  .kw.show{opacity:1;transform:none;}
+  .demo-static .kw{opacity:1!important;transform:none!important;}
+  .jnote{margin-top:auto;padding-top:14px;font-size:11px;color:var(--ink3);line-height:1.7;
+    border-top:1px dashed var(--line);}
+
+  /* 第三幕：话术与红线 */
+  .scripts{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .script{padding:26px;display:flex;flex-direction:column;position:relative;}
+  .script .st{font-size:11px;letter-spacing:.24em;font-weight:700;color:var(--deep);}
+  .script .st.alt{color:var(--coral);}
+  .script .stext{font-size:14.5px;line-height:2.05;color:#31423B;margin:14px 0 18px;flex:1;}
+  .script .sops{display:flex;gap:10px;}
+  .op{font-size:12.5px;font-weight:600;border-radius:10px;padding:9px 18px;cursor:pointer;
+    font-family:inherit;transition:all .25s;border:1px solid var(--line);background:var(--paper2);color:var(--ink2);}
+  .op:hover{border-color:var(--deep);color:var(--deep);}
+  .op.primary{background:var(--deep);color:#F2F7F4;border-color:var(--deep);}
+  .op.primary:hover{box-shadow:0 10px 20px -10px rgba(0,75,58,.55);}
+  .refnote{margin-top:16px;font-size:11.5px;color:var(--ink3);text-align:center;letter-spacing:.08em;}
+
+  .editor{margin-top:22px;padding:28px;display:none;}
+  .editor.open{display:block;}
+  .editor h3{font-size:16px;font-weight:700;}
+  .editor .orig{margin-top:14px;font-size:13px;line-height:1.9;color:var(--ink3);
+    background:var(--paper2);border-radius:12px;padding:14px 16px;border:1px dashed var(--line);}
+  .editor .orig span{font-size:11px;letter-spacing:.2em;display:block;margin-bottom:6px;font-weight:700;}
+  .editor textarea{
+    width:100%;min-height:130px;margin-top:14px;padding:16px 18px;font-size:14.5px;line-height:1.95;
+    border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);
+    font-family:inherit;resize:vertical;outline:none;transition:border-color .3s;}
+  .editor textarea:focus{border-color:var(--deep);}
+  .redline{margin-top:12px;display:flex;align-items:center;gap:10px;font-size:12.5px;min-height:24px;}
+  .redline .ok{color:var(--green);font-weight:700;}
+  .redline .bad{color:var(--coral);font-weight:700;}
+  .redline .rchip{font-size:11px;background:var(--coralbg);border:1px solid rgba(167,101,95,.4);
+    color:#7A453E;border-radius:7px;padding:3px 9px;font-weight:600;}
+  .editorrow{display:flex;align-items:center;gap:16px;margin-top:16px;}
+  .confirm{
+    display:inline-flex;align-items:center;gap:10px;font-size:15px;font-weight:800;letter-spacing:.05em;
+    background:linear-gradient(135deg,#00A758,#008348);color:#F6FCF8;border:none;border-radius:999px;
+    padding:16px 34px;cursor:pointer;font-family:inherit;
+    box-shadow:0 0 0 5px rgba(0,167,88,.16),0 20px 40px -14px rgba(0,167,88,.7);
+    transition:transform .3s,box-shadow .3s;}
+  .confirm:hover{transform:translateY(-2px) scale(1.01);}
+  .confirm:disabled{background:#B9C8C0;box-shadow:none;cursor:not-allowed;transform:none;}
+  .editornote{font-size:12px;color:var(--ink2);line-height:1.8;}
+
+  /* 第四幕：合环 */
+  .assets{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;}
+  .acard{padding:24px;}
+  .acard h4{font-size:14.5px;font-weight:700;}
+  .trace{margin-top:16px;display:flex;flex-direction:column;gap:0;position:relative;}
+  .trace::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1.5px;
+    background:linear-gradient(180deg,var(--green),var(--gold));}
+  .titem{display:flex;gap:14px;padding:7px 0 7px 24px;position:relative;font-size:12.5px;line-height:1.7;color:var(--ink2);}
+  .titem::before{content:"";position:absolute;left:0;top:12px;width:11px;height:11px;border-radius:50%;
+    background:var(--paper);border:2.5px solid var(--green);}
+  .titem.gold::before{border-color:var(--gold);}
+  .titem b{color:var(--ink);font-weight:600;}
+  .titem .tt{color:var(--ink3);font-size:11px;margin-right:6px;}
+  .growthcard{padding:24px;}
+  .backflow{padding:24px;display:flex;flex-direction:column;}
+  .backflow .bf{margin-top:14px;display:flex;flex-direction:column;gap:10px;flex:1;}
+  .bfitem{font-size:12.5px;line-height:1.75;color:var(--ink2);background:var(--paper2);
+    border:1px solid var(--line);border-radius:11px;padding:11px 14px;}
+  .bfitem b{color:var(--deep);font-weight:600;}
+
+  .finale{margin-top:90px;text-align:center;padding-bottom:30px;}
+  .finale .fring{width:210px;height:210px;margin:0 auto;}
+  .finale h2{font-size:30px;margin-top:34px;font-weight:700;}
+  .finale p{margin:14px auto 0;font-size:14px;line-height:2.0;color:var(--ink2);max-width:580px;}
+  .finale p b{color:var(--deep);}
+  .footer{padding:34px 0 46px;text-align:center;font-size:11.5px;color:var(--ink3);letter-spacing:.1em;line-height:2.1;}
+
+  .toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);z-index:99;
+    background:var(--deep);color:#EAF4EF;font-size:13px;font-weight:600;letter-spacing:.05em;
+    padding:13px 26px;border-radius:999px;box-shadow:0 18px 40px -12px rgba(0,40,30,.5);
+    transition:transform .45s cubic-bezier(.2,.9,.3,1.2);}
+  .toast.show{transform:translate(-50%,0);}
+
+  @media (max-width:960px){
+    .pushgrid,.station,.scripts,.assets{grid-template-columns:1fr;}
+    .hero h1{font-size:36px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶栏：本页点亮「理解」 -->
+<div class="topbar">
+  <svg class="loopmark" viewBox="0 0 34 34" id="topring"></svg>
+  <div>
+    <div class="name">客诉话术小助手</div>
+    <div class="world">电波雷达站 · 听见情绪</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge-test">内部测试 · 模拟数据</span>
+  <a class="backlink" href="../index.html">← 返回总览</a>
+</div>
+
+<div class="wrap">
+
+  <!-- 第一幕：早晨 -->
+  <section class="hero reveal">
+    <div class="morning">
+      <span class="clock mono">08:15 · 周五 · 客服中心早班</span>
+    </div>
+    <h1 class="serif">早，小周。<br>昨夜 12 通留痕已归档，<br><em>第 13 通，正在响。</em></h1>
+    <p class="sub">客户的话先进雷达站：<b>AI 先听、先判、先起草</b>——判 1 个主类型、测 1 个情绪等级、写 2 条不同风格的话术。但发不发、怎么改、最终怎么回，<b>永远由你拍板</b>。</p>
+    <div class="pushgrid">
+      <div class="card push">
+        <span class="ptag"><span class="dot"></span>信号 · 主动推送</span>
+        <h3>昨夜留痕 12 通，待回电 3 通</h3>
+        <p>全部已留痕归档。当前接入 1 通新投诉，客户情绪激动——建议优先安抚，谨慎回复。</p>
+        <div class="big num">13<span style="font-size:13px;color:var(--ink3)"> 通 · 今日第 1 通</span></div>
+      </div>
+      <div class="card push">
+        <span class="ptag"><span class="dot"></span>理解 · AI 已备好</span>
+        <h3>类型库与红线库已加载</h3>
+        <p>6 类投诉只判 1 个主类型；极端情绪自动触发安抚提醒。话术红线全程在线检测。</p>
+        <div class="big num">6<span style="font-size:13px;color:var(--ink3)"> 类 · 单选判定</span></div>
+      </div>
+      <div class="card push">
+        <span class="ptag"><span class="dot"></span>任务 · 本周</span>
+        <h3>你的一次通过率 91%</h3>
+        <p>话术不改动直接采用的比例。四周前是 72%——长进来的是你的判断，不是 AI 的。</p>
+        <div class="big num">91<span style="font-size:13px;color:var(--ink3)"> % · ↑ 19pt</span></div>
+      </div>
+    </div>
+    <div class="humangate">
+      <div class="icon">人</div>
+      <div>
+        <div class="t1">雷达只负责听见，拍板永远是人</div>
+        <div class="t2">话术发不发、怎么改、最终怎么回复，必须客服自己拍板；类型判断不清晰时，由人工最终判定，系统不强行归类。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">签名时刻 · 前 8 秒</span></div>
+
+  <!-- 第二幕：雷达台 -->
+  <section>
+    <div class="station reveal">
+      <div class="card callcard">
+        <span class="ct">来电 · 客户原话</span>
+        <div class="sceneswitch">
+          <button class="spill on" id="sc1">场景 1 · 普通投诉</button>
+          <button class="spill" id="sc2">场景 2 · 极端情绪</button>
+        </div>
+        <div class="callvoice" id="voicebars"></div>
+        <div class="calltext" id="calltext"></div>
+        <div class="callmeta" id="callmeta">呼入 00:47 · 客户情绪：愤怒、语气激动</div>
+      </div>
+
+      <div class="card radarcard">
+        <span class="ct">类型雷达 · 六选一</span>
+        <svg id="radar" viewBox="0 0 360 360"></svg>
+        <button class="scanbtn" id="scanbtn">◉ 开始分析</button>
+        <div class="scanstat" id="scanstat">点击开始，听雷达把这段话拆开</div>
+      </div>
+
+      <div class="card judcard">
+        <span class="ct">判定结果</span>
+        <div class="jres" id="jres">
+          <div class="jtype"><span id="jtypeName">理赔纠纷</span><small>唯一主类型</small></div>
+          <div class="jgauge">
+            <svg viewBox="0 0 220 96" style="width:100%;display:block;" id="gauge"></svg>
+            <div class="jemotion"><span>情绪等级</span><b id="jem">高愤怒 · 优先安抚</b></div>
+          </div>
+          <div class="alertbar" id="alertbar">⚠️ 检测到客户情绪较为激动，谨慎回复——已追加情绪缓解话术，请先安抚、再谈事。</div>
+          <div class="kwzone">
+            <div class="kt">抓取关键词</div>
+            <div class="kws" id="kws"></div>
+          </div>
+        </div>
+        <p class="jnote">判断不清晰时，这里会显示「请人工判断」并给出通用安抚话术——系统不强行归类。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">人的行动 · 话术由你定稿</span></div>
+
+  <!-- 第三幕：话术与红线 -->
+  <section class="reveal">
+    <div class="scripts" id="scripts"></div>
+    <p class="refnote">话术仅供参考，最终回复以人工确认为准</p>
+
+    <div class="card editor" id="editor">
+      <h3>修改话术 · 红线实时检测</h3>
+      <div class="orig"><span>原话术 · AI 起草</span><span id="origtext"></span></div>
+      <textarea id="editbox"></textarea>
+      <div class="redline" id="redline"></div>
+      <div class="editorrow">
+        <button class="confirm" id="confirmbtn">人工确认 · 复制最终版</button>
+        <p class="editornote">试试输入「我保证」「一定能赔」——红线词一出现，这个按钮就会锁住。<br>修改版与原稿都会留痕，谁改的、改了什么，可追溯。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">合环 · 每一通都让下一通更准</span></div>
+
+  <!-- 第四幕：合环 -->
+  <section class="reveal">
+    <div class="assets">
+      <div class="card acard">
+        <h4>这一通的留痕时间线</h4>
+        <div class="trace">
+          <div class="titem"><span><span class="tt mono">08:16</span><b>原话接入</b> · 雷达扫描，判「理赔纠纷」</span></div>
+          <div class="titem"><span><span class="tt mono">08:16</span><b>话术生成</b> · 安抚优先型 × 直面问题型</span></div>
+          <div class="titem gold"><span><span class="tt mono">08:18</span><b>人工修改</b> · 小周改 3 处措辞，红线检测通过</span></div>
+          <div class="titem gold"><span><span class="tt mono">08:18</span><b>人工确认发出</b> · 修改版与原稿同步归档</span></div>
+        </div>
+      </div>
+      <div class="card growthcard">
+        <h4>成长曲线 · 一次通过率</h4>
+        <svg id="growth" viewBox="0 0 340 190" style="width:100%;display:block;margin-top:8px;"></svg>
+        <p style="font-size:12px;color:var(--ink2);line-height:1.8;margin-top:4px;">四周 72% → 91%。AI 起草越来越合你心意，是因为<b style="color:var(--deep)">你的每次修改都在教它</b>。</p>
+      </div>
+      <div class="card backflow">
+        <h4>回流 · 高分话术样例库</h4>
+        <div class="bf">
+          <div class="bfitem">你本周 <b>8 条零修改话术</b> 已进入样例库，成为新人跟读教材</div>
+          <div class="bfitem">「先安抚、再核对费用明细」被标记为 <b>理赔纠纷场景范式</b></div>
+          <div class="bfitem">类型误判 2 条已回传，下轮类型库 <b>边缘样本 +2</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finale">
+      <svg class="fring" viewBox="-30 -30 270 270" id="bigring"></svg>
+      <h2 class="serif">客户的情绪被接住，人的判断被留下。</h2>
+      <p>来电接入 → AI 听懂类型与情绪 → 人改话术、守红线 → 确认发出 → 全程留痕 → <b>高分话术回流成新人的教材</b>。<br>AI 把「想半天」变成「看一眼」，但<b>按下发送键的那只手，永远是人的</b>。</p>
+    </div>
+  </section>
+
+  <div class="footer">
+    客诉话术小助手 · 电波雷达站 Demo　|　内部测试 · 模拟数据　|　话术仅供参考，最终回复以人工确认为准<br>
+    Loop：信号 → 理解 → 行动 → 复盘 → 资产 → 回流
+  </div>
+
+</div>
+
+<div class="toast" id="toast">已复制 · 本次操作已留痕</div>
+
+<script>
+(function(){
+  var HASH = location.hash || '';
+  var STATIC = HASH.indexOf('demo') >= 0;
+  if (STATIC) document.documentElement.classList.add('demo-static');
+  var LOOP = ['信号','理解','行动','复盘','资产','回流'];
+  var LIT = 1;
+  var GREEN='#00A758', DEEP='#004B3A', GOLD='#C89A3A', CORAL='#A7655F', INK3='#8CA396';
+
+  /* 顶栏小环 */
+  (function(){
+    var s='', cx=17, cy=17, r=12;
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2 + j*Math.PI/3;
+      var x=(cx+r*Math.cos(a)).toFixed(1), y=(cy+r*Math.sin(a)).toFixed(1);
+      var lit=(j===LIT);
+      s+='<circle cx="'+x+'" cy="'+y+'" r="'+(lit?3.6:2.2)+'" fill="'+(lit?GREEN:'#9FB8AC')+'"/>';
+    }
+    s+='<circle cx="17" cy="17" r="16.2" fill="none" stroke="'+GOLD+'" stroke-width="0.8" opacity="0.65"/>';
+    document.getElementById('topring').innerHTML=s;
+  })();
+
+  /* 声纹条 */
+  (function(){
+    var h='';
+    for (var i=0;i<26;i++){
+      var v = 22 + Math.round(Math.abs(Math.sin(i*1.7))*70);
+      h += '<i style="height:'+v+'%;animation-delay:'+(i*0.07).toFixed(2)+'s"></i>';
+    }
+    document.getElementById('voicebars').innerHTML = h;
+  })();
+
+  var TYPES = ['理赔纠纷','产品条款不满','销售误导','服务不满','情绪态度问题','无理投诉'];
+  var S = {
+    1: {
+      text: '你们什么破保险公司！我妈住院花了八万多，你们<b>才赔两万</b>？这也叫<b>重疾险</b>？当初买的时候说的好好的，什么都赔，现在这也不赔那也不赔！我要投诉你们<b>销售误导</b>！<b>那个业务员当初跟我说什么都能报</b>，现在人呢？',
+      meta: '呼入 00:47 · 客户情绪：愤怒、语气激动',
+      typeIdx: 0, emotion: '高愤怒 · 优先安抚', gauge: 0.72, alert: false,
+      kws: ['才赔两万','重疾险','销售误导','业务员说什么都能报'],
+      scripts: [
+        {tag:'话术 1 · 安抚优先型', alt:false, text:'非常理解您现在的心情，遇到这样的情况换做是谁都会很着急。您先消消气，我来帮您仔细看看这个理赔的情况。请问您方便说一下具体是哪方面的费用没有赔到吗？我帮您一一核对。'},
+        {tag:'话术 2 · 直面问题型', alt:false, text:'您好，感谢您把真实的感受告诉我们。关于理赔金额的情况，我非常重视。为了帮您弄清楚，我想先跟您确认一下保单信息和这次住院的具体情况，您看方便吗？'}
+      ]
+    },
+    2: {
+      text: '我告诉你们，今天不把事情解决了，我就<b>去你们公司门口坐着</b>！我说到做到！<b>你们逼得我没法活了</b>！',
+      meta: '呼入 00:12 · 客户情绪：极度激动、有极端倾向',
+      typeIdx: 4, emotion: '极度激动 · 先接住人', gauge: 0.95, alert: true,
+      kws: ['去公司门口坐着','逼得我没法活了'],
+      scripts: [
+        {tag:'情绪缓解话术 1', alt:true, text:'我非常理解您现在的感受，遇到这样的事确实让人很难接受。您先别激动，不管是什么问题，我们都会认真对待、尽力帮您解决。您能先跟我说说具体是什么事情吗？'},
+        {tag:'情绪缓解话术 2', alt:true, text:'您先消消气，气坏了身体不值得。我是专门负责处理您这个问题的，您放心，我一定会认真听您说，尽全力帮您协调。您看方便告诉我具体情况吗？'}
+      ]
+    }
+  };
+  var cur = 1;
+
+  /* 雷达 */
+  var RC = {x:180, y:180, R:118};
+  function tpos(i, r){
+    var a = -Math.PI/2 + i*Math.PI/3;
+    return [RC.x + r*Math.cos(a), RC.y + r*Math.sin(a)];
+  }
+  (function(){
+    var s='';
+    [44,80,116].forEach(function(r){
+      s+='<circle cx="'+RC.x+'" cy="'+RC.y+'" r="'+r+'" fill="none" stroke="rgba(20,60,45,.12)" stroke-width="1"/>';
+    });
+    s+='<g id="sweep" opacity="0"><path d="M'+RC.x+','+RC.y+' L'+(RC.x)+','+(RC.y-116)+' A116,116 0 0 1 '+(RC.x+58)+','+(RC.y-100.5)+' Z" fill="rgba(0,167,88,.18)"/><line x1="'+RC.x+'" y1="'+RC.y+'" x2="'+RC.x+'" y2="'+(RC.y-116)+'" stroke="'+GREEN+'" stroke-width="1.6"/></g>';
+    s+='<line id="pointer" x1="'+RC.x+'" y1="'+RC.y+'" x2="'+RC.x+'" y2="'+(RC.y-116)+'" stroke="'+DEEP+'" stroke-width="2" opacity="0"/>';
+    s+='<g id="blips"></g><g id="tnodes"></g>';
+    s+='<circle cx="'+RC.x+'" cy="'+RC.y+'" r="4" fill="'+DEEP+'"/>';
+    var tn='';
+    for (var i=0;i<6;i++){
+      var p=tpos(i,116), lp=tpos(i,142);
+      tn+='<circle class="tn" data-i="'+i+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="6.5" fill="#D8E6DE" stroke="#FBFDFB" stroke-width="2"/>';
+      tn+='<text class="tl" data-i="'+i+'" x="'+lp[0].toFixed(1)+'" y="'+(lp[1]+4).toFixed(1)+'" text-anchor="middle" font-size="11.5" fill="#5E7369">'+TYPES[i]+'</text>';
+    }
+    document.getElementById('radar').innerHTML = s;
+    document.getElementById('tnodes').innerHTML = tn;
+  })();
+
+  /* 情绪仪表 */
+  function renderGauge(v){
+    var cx=110, cy=86, r=64, s='';
+    s+='<path d="M'+(cx-r)+','+cy+' A'+r+','+r+' 0 0 1 '+(cx+r)+','+cy+'" fill="none" stroke="#D8E6DE" stroke-width="7" stroke-linecap="round"/>';
+    var a = Math.PI*(1-v);
+    var ex = cx + r*Math.cos(a), ey = cy - r*Math.sin(a);
+    s+='<path d="M'+(cx-r)+','+cy+' A'+r+','+r+' 0 0 1 '+ex.toFixed(1)+','+ey.toFixed(1)+'" fill="none" stroke="'+CORAL+'" stroke-width="7" stroke-linecap="round"/>';
+    var na = Math.PI*(1-v);
+    var nx = cx + 46*Math.cos(na), ny = cy - 46*Math.sin(na);
+    s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+nx.toFixed(1)+'" y2="'+ny.toFixed(1)+'" stroke="'+DEEP+'" stroke-width="2.4"/>';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+DEEP+'"/>';
+    s+='<text x="'+(cx-r)+'" y="'+(cy-12)+'" text-anchor="middle" font-size="10" fill="'+INK3+'">平静</text>';
+    s+='<text x="'+(cx+r)+'" y="'+(cy-12)+'" text-anchor="middle" font-size="10" fill="'+INK3+'">激动</text>';
+    document.getElementById('gauge').innerHTML = s;
+  }
+
+  var scanning = false, sweepRAF = null;
+  function resetResult(){
+    document.getElementById('jres').classList.remove('show');
+    document.getElementById('alertbar').classList.remove('show');
+    document.getElementById('pointer').setAttribute('opacity','0');
+    document.getElementById('blips').innerHTML='';
+    document.getElementById('kws').innerHTML='';
+    document.getElementById('scanstat').textContent = '扫描中 · 正在抓取关键词…';
+    var tns = document.querySelectorAll('.tn'), tls = document.querySelectorAll('.tl');
+    tns.forEach(function(n){ n.setAttribute('fill','#D8E6DE'); });
+    tls.forEach(function(n){ n.setAttribute('fill','#5E7369'); n.setAttribute('font-weight','400'); });
+  }
+  function finalResult(){
+    var d = S[cur];
+    if (sweepRAF) cancelAnimationFrame(sweepRAF);
+    document.getElementById('sweep').setAttribute('opacity','0');
+    var p = tpos(d.typeIdx, 116);
+    var ptr = document.getElementById('pointer');
+    ptr.setAttribute('x2', p[0]); ptr.setAttribute('y2', p[1]); ptr.setAttribute('opacity','1');
+    document.querySelectorAll('.tn').forEach(function(n){
+      var on = +n.getAttribute('data-i') === d.typeIdx;
+      n.setAttribute('fill', on ? GREEN : '#E3EDE8');
+    });
+    document.querySelectorAll('.tl').forEach(function(n){
+      var on = +n.getAttribute('data-i') === d.typeIdx;
+      n.setAttribute('fill', on ? DEEP : '#9DB3A8');
+      n.setAttribute('font-weight', on ? '800' : '400');
+    });
+    document.getElementById('jtypeName').textContent = TYPES[d.typeIdx];
+    document.getElementById('jem').textContent = d.emotion;
+    renderGauge(d.gauge);
+    if (d.alert) document.getElementById('alertbar').classList.add('show');
+    var kh='';
+    d.kws.forEach(function(k){ kh+='<span class="kw show">'+k+'</span>'; });
+    document.getElementById('kws').innerHTML = kh;
+    document.getElementById('jres').classList.add('show');
+    document.getElementById('scanstat').textContent = '判定完成 · 用时 2.8 秒';
+    renderScripts();
+  }
+  function runScan(){
+    if (scanning) return;
+    var d = S[cur];
+    resetResult();
+    if (STATIC){ finalResult(); return; }
+    scanning = true;
+    var sw = document.getElementById('sweep');
+    sw.setAttribute('opacity','1');
+    var ang = 0, t0 = null, DUR = 2400;
+    var blipMade = 0;
+    function step(ts){
+      if (!t0) t0 = ts;
+      var el = ts - t0, t = Math.min(el/DUR, 1);
+      ang = t * 720;
+      sw.setAttribute('transform','rotate('+ang+' '+RC.x+' '+RC.y+')');
+      if (t > 0.25 && blipMade === 0){ blipMade=1; mkBlip(0.5); }
+      if (t > 0.5 && blipMade === 1){ blipMade=2; mkBlip(1.9); document.getElementById('scanstat').textContent='扫描中 · 正在判定主类型…'; }
+      if (t > 0.75 && blipMade === 2){ blipMade=3; mkBlip(3.6); }
+      if (t < 1) sweepRAF = requestAnimationFrame(step);
+      else { scanning = false; finalResult(); }
+    }
+    sweepRAF = requestAnimationFrame(step);
+  }
+  function mkBlip(seed){
+    var i = Math.floor((Math.sin(seed*13.7)*0.5+0.5)*5.99);
+    var p = tpos(i, 40 + (Math.cos(seed*7.3)*0.5+0.5)*66);
+    var g = document.getElementById('blips');
+    g.innerHTML += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4" fill="'+GOLD+'"><animate attributeName="r" values="3;9;3" dur="1.2s" repeatCount="2"/><animate attributeName="opacity" values="1;.3;1" dur="1.2s" repeatCount="2"/></circle>';
+  }
+
+  /* 话术卡 */
+  function renderScripts(){
+    var d = S[cur], h='';
+    d.scripts.forEach(function(sc, i){
+      h += '<div class="card script"><span class="st'+(sc.alt?' alt':'')+'">'+sc.tag+'</span>'+
+           '<p class="stext">「'+sc.text+'」</p>'+
+           '<div class="sops"><button class="op primary" data-copy="'+i+'">复制这条</button>'+
+           '<button class="op" data-edit="'+i+'">修改</button></div></div>';
+    });
+    document.getElementById('scripts').innerHTML = h;
+  }
+
+  /* 复制 & 留痕 toast */
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  }
+  function copyText(txt, msg){
+    function done(){ toast(msg || '已复制 · 本次操作已留痕'); }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, done);
+    } else { done(); }
+  }
+  document.getElementById('scripts').addEventListener('click', function(e){
+    var c = e.target.getAttribute('data-copy'), m = e.target.getAttribute('data-edit');
+    if (c !== null && c !== undefined){
+      copyText(S[cur].scripts[+c].text);
+    } else if (m !== null && m !== undefined){
+      openEditor(+m);
+    }
+  });
+
+  /* 编辑器 + 红线 */
+  var RED = ['可以赔','是我们的错','肯定能解决','我保证','一定帮您','绝对没问题','确实是我们不对','条款就是这样','一定能赔','肯定赔'];
+  function openEditor(i){
+    var sc = S[cur].scripts[i];
+    document.getElementById('origtext').textContent = sc.text;
+    var eb = document.getElementById('editbox');
+    eb.value = sc.text;
+    document.getElementById('editor').classList.add('open');
+    checkRed();
+    document.getElementById('editor').scrollIntoView({behavior: STATIC?'auto':'smooth', block:'center'});
+  }
+  function checkRed(){
+    var v = document.getElementById('editbox').value, hits = [];
+    RED.forEach(function(w){ if (v.indexOf(w) >= 0) hits.push(w); });
+    var rl = document.getElementById('redline'), btn = document.getElementById('confirmbtn');
+    if (hits.length){
+      var h = '<span class="bad">● 触碰话术红线 ' + hits.length + ' 处：</span>';
+      hits.slice(0,3).forEach(function(w){ h += '<span class="rchip">「'+w+'」</span>'; });
+      h += '<span style="color:var(--ink3);font-size:11.5px">承诺与结论性用语，不能说</span>';
+      rl.innerHTML = h; btn.disabled = true;
+    } else {
+      rl.innerHTML = '<span class="ok">✓ 红线检测通过</span><span style="color:var(--ink3);font-size:11.5px">无承诺性、结论性用语，可以发出</span>';
+      btn.disabled = false;
+    }
+  }
+  document.getElementById('editbox').addEventListener('input', checkRed);
+  document.getElementById('confirmbtn').addEventListener('click', function(){
+    copyText(document.getElementById('editbox').value, '最终版已复制 · 修改版与原稿均已留痕');
+  });
+
+  /* 场景切换 */
+  function setScene(n){
+    cur = n;
+    document.getElementById('sc1').className = 'spill' + (n===1?' on':'');
+    document.getElementById('sc2').className = 'spill' + (n===2?' on':'');
+    document.getElementById('calltext').innerHTML = '「' + S[n].text + '」';
+    document.getElementById('callmeta').textContent = S[n].meta;
+    document.getElementById('editor').classList.remove('open');
+    runScan();
+  }
+  document.getElementById('sc1').addEventListener('click', function(){ setScene(1); });
+  document.getElementById('sc2').addEventListener('click', function(){ setScene(2); });
+  document.getElementById('scanbtn').addEventListener('click', runScan);
+
+  /* 成长曲线 */
+  (function(){
+    var pts=[[72,'第 1 周'],[78,'第 2 周'],[85,'第 3 周'],[91,'本周']];
+    var X0=42,X1=310,Y0=152,Y1=36;
+    function px(i){ return X0+(X1-X0)*i/3; }
+    function py(v){ return Y0-(Y0-Y1)*(v-65)/(95-65); }
+    var d=''; pts.forEach(function(p,i){ d+=(i?' L':'M')+px(i)+','+py(p[0]).toFixed(1); });
+    var s='<path d="'+d+' L'+px(3)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(0,167,88,.09)"/>';
+    s+='<path id="gline" d="'+d+'" fill="none" stroke="'+GREEN+'" stroke-width="2.6" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="4.4" fill="'+(i===3?GREEN:'#FBFDFB')+'" stroke="'+GREEN+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])-11)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#20302A" font-family="Georgia,serif">'+p[0]+'%</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+19)+'" text-anchor="middle" font-size="10" fill="'+INK3+'">'+p[1]+'</text>';
+    });
+    document.getElementById('growth').innerHTML=s;
+    var gl=document.getElementById('gline'), len=gl.getTotalLength();
+    if (!STATIC){
+      gl.style.strokeDasharray=len; gl.style.strokeDashoffset=len;
+      setTimeout(function(){ gl.style.transition='stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)'; gl.style.strokeDashoffset='0'; },300);
+    }
+  })();
+
+  /* 合环大环 */
+  (function(){
+    var cx=105, cy=105, r=82, s='';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(20,60,45,.2)" stroke-width="1.4"/>';
+    for (var i=0;i<6;i++){
+      var a=-Math.PI/2+i*Math.PI/3;
+      var x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      var lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a);
+      s+='<circle class="fn" data-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7" fill="#D8E6DE" stroke="#FBFDFB" stroke-width="2"/>';
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#5E7369">'+LOOP[i]+'</text>';
+    }
+    document.getElementById('bigring').innerHTML=s;
+  })();
+  function lightFinale(){
+    document.querySelectorAll('#bigring .fn').forEach(function(n,i){
+      setTimeout(function(){
+        n.setAttribute('fill', i===LIT ? GREEN : GOLD);
+        n.style.transition='fill .5s';
+      }, STATIC?0:i*260);
+    });
+  }
+
+  /* 出现动画 */
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if (e.target.querySelector && e.target.querySelector('#bigring')) lightFinale();
+      io.unobserve(e.target);
+    });
+  }, {threshold:.18});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  /* 初始 */
+  document.getElementById('calltext').innerHTML = '「' + S[1].text + '」';
+  if (STATIC){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+    lightFinale();
+    setScene(HASH.indexOf('s2') >= 0 ? 2 : 1);
+  } else {
+    setTimeout(function(){ runScan(); }, 700);
+  }
+})();
+</script>
+</body>
+</html>
