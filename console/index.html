@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中宏 Loop 中控台 · 大环天文台</title>
+<style>
+  :root{
+    --space:#03251D; --space2:#053328; --dome:#042B21;
+    --ivory:#FBF8F1; --ivory2:#F1EAD9;
+    --ink:#1E2B26; --ink2:#5C6B62;
+    --star:#E9F2EC; --star2:#9DBBAE; --star3:#5F7F72;
+    --green:#00A758; --gold:#D4A94E; --gold2:#C89A3A; --coral:#C9715F;
+    --line:rgba(212,169,78,.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--star); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1200px 600px at 78% -10%, rgba(0,167,88,.16), transparent 60%),
+      radial-gradient(900px 620px at -10% 40%, rgba(212,169,78,.10), transparent 62%),
+      radial-gradient(700px 700px at 50% 115%, rgba(0,167,88,.08), transparent 60%),
+      linear-gradient(170deg,#042B21,#03251D 50%,#021B15);
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif;}
+  .num{font-family:Georgia,"Times New Roman",serif;}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:14px 34px;background:rgba(3,37,29,.88);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .loopmark{width:34px;height:34px;flex:none;}
+  .topbar .name{font-size:15px;font-weight:700;color:var(--star);}
+  .topbar .world{font-size:11px;color:var(--star2);letter-spacing:.28em;margin-top:2px;}
+  .topbar .spacer{flex:1;}
+  .badge-test{font-size:10.5px;letter-spacing:.14em;color:var(--coral);
+    border:1px solid rgba(201,113,95,.45);border-radius:999px;padding:4px 12px;
+    background:rgba(201,113,95,.1);white-space:nowrap;}
+  .backlink{font-size:12.5px;color:var(--star2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .25s;white-space:nowrap;}
+  .backlink:hover{color:var(--gold);border-color:var(--gold);}
+
+  .wrap{max-width:1200px;margin:0 auto;padding:0 34px;}
+  .rule{display:flex;align-items:center;gap:18px;margin:88px 0 46px;}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(212,169,78,.55));}
+  .rule::after{background:linear-gradient(90deg,rgba(212,169,78,.55),transparent);}
+  .rule .rt{font-size:11px;letter-spacing:.42em;color:var(--gold);white-space:nowrap;font-weight:600;}
+
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .demo-static .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .demo-static *{animation:none!important;transition:none!important;}
+
+  /* 晨启 */
+  .hero{padding:86px 0 8px;text-align:center;}
+  .hero .clock{font-size:15px;color:var(--star2);letter-spacing:.12em;}
+  .hero h1{font-size:56px;line-height:1.18;font-weight:700;margin-top:16px;}
+  .hero h1 em{font-style:normal;color:var(--gold);}
+  .hero .sub{margin:20px auto 0;font-size:15.5px;line-height:1.95;color:var(--star2);max-width:720px;}
+  .hero .sub b{color:var(--star);font-weight:600;}
+  .nightgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:46px;}
+  .night{background:linear-gradient(180deg,rgba(251,248,241,.06),rgba(251,248,241,.03));
+    border:1px solid var(--line);border-radius:18px;padding:22px 18px;text-align:center;}
+  .night .nv{font-size:40px;font-weight:800;color:var(--gold);line-height:1.05;}
+  .night .nl{margin-top:8px;font-size:12px;color:var(--star2);letter-spacing:.14em;font-weight:600;}
+  .night .ns{margin-top:5px;font-size:11px;color:var(--star3);}
+
+  /* 天文台 */
+  .obswrap{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;align-items:stretch;}
+  .dome{background:radial-gradient(closest-side at 50% 46%, rgba(0,167,88,.10), transparent 72%),
+    linear-gradient(180deg,#053328,#03251D);
+    border:1px solid var(--line);border-radius:24px;padding:10px;position:relative;overflow:hidden;}
+  .dome .dometag{position:absolute;top:18px;left:22px;font-size:10.5px;letter-spacing:.26em;color:var(--star3);font-weight:700;}
+  .dome .dometag b{color:var(--gold);}
+  .panel{background:linear-gradient(180deg,rgba(251,248,241,.05),rgba(251,248,241,.02));
+    border:1px solid var(--line);border-radius:24px;padding:26px 26px;display:flex;flex-direction:column;}
+  .panel .ptag{font-size:10.5px;letter-spacing:.26em;color:var(--gold);font-weight:700;}
+  .panel h3{font-size:22px;margin-top:10px;font-weight:800;color:var(--star);}
+  .panel .pworld{font-size:12px;color:var(--star2);margin-top:4px;letter-spacing:.1em;}
+  .panel .psig{margin-top:14px;font-size:13.5px;line-height:1.95;color:var(--star2);}
+  .panel .psig b{color:var(--star);font-weight:600;}
+  .plit{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-size:11.5px;font-weight:700;
+    color:var(--gold);border:1px solid var(--line);border-radius:999px;padding:6px 14px;width:fit-content;}
+  .plit i{width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .pmetric{margin-top:16px;background:rgba(0,167,88,.08);border:1px solid rgba(0,167,88,.25);
+    border-radius:14px;padding:14px 18px;}
+  .pmetric .mv{font-size:26px;font-weight:800;color:var(--green);}
+  .pmetric .ml{font-size:11.5px;color:var(--star2);margin-top:4px;line-height:1.7;}
+  .enterbtn{margin-top:auto;padding-top:20px;}
+  .enterbtn a{display:inline-block;font-size:14.5px;font-weight:800;text-decoration:none;
+    color:#042B21;background:linear-gradient(135deg,#E4BE63,#C89A3A);border-radius:999px;padding:14px 32px;
+    box-shadow:0 0 0 5px rgba(212,169,78,.14),0 18px 36px -14px rgba(212,169,78,.45);transition:transform .3s;}
+  .enterbtn a:hover{transform:translateY(-2px);}
+  .enterbtn .ehint{margin-left:14px;font-size:11.5px;color:var(--star3);}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px;}
+  .chip{font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;
+    border:1px solid rgba(233,242,236,.18);color:var(--star2);background:transparent;font-family:inherit;transition:all .25s;}
+  .chip:hover{border-color:var(--gold);color:var(--gold);}
+  .chip.on{background:var(--gold);color:#042B21;border-color:var(--gold);}
+
+  /* 六节点覆盖带 */
+  .nodeband{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+  .nb{background:linear-gradient(180deg,rgba(251,248,241,.05),rgba(251,248,241,.02));
+    border:1px solid var(--line);border-radius:16px;padding:16px 14px;cursor:pointer;transition:all .3s;}
+  .nb:hover{transform:translateY(-3px);border-color:var(--gold);}
+  .nb.hot{border-color:var(--gold);background:rgba(212,169,78,.1);}
+  .nb .ndot{width:10px;height:10px;border-radius:50%;background:var(--green);margin-bottom:9px;}
+  .nb .nn{font-size:14px;font-weight:800;color:var(--star);}
+  .nb .nc{font-size:22px;font-weight:800;color:var(--gold);margin-top:6px;}
+  .nb .nl2{font-size:10.5px;color:var(--star3);margin-top:3px;letter-spacing:.08em;}
+  .nb .nlist{margin-top:10px;font-size:10.5px;line-height:1.8;color:var(--star2);}
+
+  /* 回流网 */
+  .flownet{background:linear-gradient(180deg,#053328,#03251D);border:1px solid var(--line);
+    border-radius:24px;padding:26px 18px 10px;overflow:hidden;}
+  .flownet .ftag{font-size:10.5px;letter-spacing:.26em;color:var(--star3);font-weight:700;padding:0 12px;}
+  .flownet .ftag b{color:var(--gold);}
+  .flowgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px;}
+  .flowcard{background:linear-gradient(180deg,rgba(251,248,241,.05),rgba(251,248,241,.02));
+    border:1px solid var(--line);border-radius:16px;padding:18px 20px;}
+  .flowcard .fr{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:800;color:var(--star);}
+  .flowcard .fr .far{color:var(--gold);font-weight:800;}
+  .flowcard p{margin-top:9px;font-size:12.5px;line-height:1.85;color:var(--star2);}
+  .flowcard p b{color:var(--star);font-weight:600;}
+
+  /* 总账 */
+  .ledger{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;}
+  .lgcard{background:linear-gradient(180deg,rgba(251,248,241,.05),rgba(251,248,241,.02));
+    border:1px solid var(--line);border-radius:18px;padding:22px 24px;}
+  .lgcard h4{font-size:14.5px;font-weight:800;color:var(--star);}
+  .lgcard .lsub{font-size:12px;color:var(--star2);margin-top:5px;line-height:1.75;}
+  .lgcard .lsub b{color:var(--star);}
+  .bignums{display:flex;flex-direction:column;gap:14px;}
+  .bignum{background:linear-gradient(180deg,rgba(251,248,241,.05),rgba(251,248,241,.02));
+    border:1px solid var(--line);border-radius:18px;padding:18px 22px;display:flex;align-items:baseline;gap:14px;}
+  .bignum .bv{font-size:34px;font-weight:800;color:var(--gold);}
+  .bignum .bl{font-size:12px;color:var(--star2);line-height:1.6;}
+
+  /* 入口墙 */
+  .gatewall{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px;}
+  .gate{display:flex;gap:13px;align-items:center;text-decoration:none;
+    background:linear-gradient(180deg,rgba(251,248,241,.05),rgba(251,248,241,.02));
+    border:1px solid var(--line);border-radius:15px;padding:15px 17px;transition:all .3s;}
+  .gate:hover{transform:translateY(-3px);border-color:var(--gold);background:rgba(212,169,78,.07);}
+  .gate .gi{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;color:#042B21;background:linear-gradient(135deg,#E4BE63,#C89A3A);}
+  .gate .gn{font-size:13.5px;font-weight:800;color:var(--star);}
+  .gate .gw{font-size:10.5px;color:var(--star3);margin-top:3px;letter-spacing:.06em;}
+
+  .finale{margin-top:96px;text-align:center;padding-bottom:30px;}
+  .finale .fring{width:220px;height:220px;margin:0 auto;}
+  .finale h2{font-size:32px;margin-top:34px;font-weight:700;color:var(--star);}
+  .finale p{margin:14px auto 0;font-size:14.5px;line-height:2.05;color:var(--star2);max-width:660px;}
+  .finale p b{color:var(--gold);}
+  .footer{padding:34px 0 46px;text-align:center;font-size:11.5px;color:var(--star3);letter-spacing:.1em;line-height:2.1;}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);z-index:99;
+    background:linear-gradient(135deg,#E4BE63,#C89A3A);color:#042B21;font-size:13px;font-weight:700;
+    padding:13px 26px;border-radius:999px;box-shadow:0 18px 40px -12px rgba(0,0,0,.6);
+    transition:transform .45s cubic-bezier(.2,.9,.3,1.2);}
+  .toast.show{transform:translate(-50%,0);}
+
+  @media (max-width:1000px){
+    .obswrap,.flowgrid,.ledger{grid-template-columns:1fr;}
+    .nightgrid{grid-template-columns:1fr 1fr;}
+    .nodeband{grid-template-columns:repeat(3,1fr);}
+    .hero h1{font-size:36px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<div class="topbar">
+  <svg class="loopmark" viewBox="0 0 34 34" id="topring"></svg>
+  <div>
+    <div class="name">中宏 Loop 中控台</div>
+    <div class="world">大环天文台 · 十四世界一屏观</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge-test">内部测试 · 模拟数据</span>
+  <a class="backlink" href="../index.html">← 十四扇门</a>
+</div>
+
+<div class="wrap">
+
+  <!-- 晨启 -->
+  <section class="hero reveal">
+    <div class="clock">清晨 07:55 · 你走进塔台</div>
+    <h1>早。<br>昨夜，<em>十四个环都在转</em>。</h1>
+    <p class="sub">十四个学员案例，不是十四个孤立的工具——它们是同一个 Loop 操作系统的十四种形态。
+      夜里它们各自守着自己的岗位：推信号、等闸门、攒资产、互相喂养。<b>你看到的不是功能清单，是一个正在复利的生态。</b></p>
+    <div class="nightgrid">
+      <div class="night"><div class="nv num" data-n="47">0</div><div class="nl">昨夜主动推送信号</div><div class="ns">没有人先开口问，系统先说</div></div>
+      <div class="night"><div class="nv num" data-n="19">0</div><div class="nl">处人工闸门待落章</div><div class="ns">AI 走到边界，就停下来等人</div></div>
+      <div class="night"><div class="nv num" data-n="32">0</div><div class="nl">件新资产入库</div><div class="ns">配方 · 规则卡 · 案例 · 版本</div></div>
+      <div class="night"><div class="nv num" data-n="8">0</div><div class="nl">次跨环回流</div><div class="ns">一个环的资产，喂给另一个环</div></div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">签名主视觉 · 大环天文台</span></div>
+
+  <!-- 天文台 -->
+  <section class="reveal">
+    <div class="obswrap">
+      <div class="dome">
+        <span class="dometag">ORBIT VIEW · <b>点卫星看世界 · 点环心节点看签名</b></span>
+        <svg id="orbit" viewBox="0 0 600 600" style="width:100%;height:auto;display:block;"></svg>
+      </div>
+      <div class="panel" id="panel">
+        <span class="ptag">CASE FILE</span>
+        <h3 id="pname">陈秋燕 · 陪跑账本</h3>
+        <div class="pworld" id="pworld">晨纸 · 第二天早晨的代理人陪跑</div>
+        <span class="plit"><i></i><span id="plit">签名节点 · 资产</span></span>
+        <p class="psig" id="psig">签名时刻：每天清晨，账本已经翻开——昨晚的跟进、今天的名单、话术都备好了。<b>转化率曲线不是 AI 的成绩单，是秋燕自己的成长账本。</b></p>
+        <div class="pmetric"><div class="mv num" id="pmetric">63%</div><div class="ml" id="pmlabel">首月转化率自校准 · 人的判断在线</div></div>
+        <div class="chips" id="chips"></div>
+        <div class="enterbtn"><a id="penter" href="../qiuyan/index.html">进入这个世界 →</a><span class="ehint">14 个世界全部可独立打开</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">六节点 · 家族覆盖带</span></div>
+
+  <!-- 覆盖带 -->
+  <section class="reveal">
+    <div class="nodeband" id="nodeband"></div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">跨环回流 · 环与环互相喂养</span></div>
+
+  <!-- 回流网 -->
+  <section class="reveal">
+    <div class="flownet">
+      <span class="ftag">ASSET FLOW · <b>8 条真实业务逻辑的跨案例资产流</b></span>
+      <svg id="flows" viewBox="0 0 1160 300" style="width:100%;height:auto;display:block;margin-top:6px;"></svg>
+      <div class="flowgrid" id="flowgrid" style="padding:0 12px 22px;"></div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">人的成长总账</span></div>
+
+  <!-- 总账 -->
+  <section class="reveal">
+    <div class="ledger">
+      <div class="lgcard">
+        <h4>AI 初稿一次通过率 · 全台</h4>
+        <div class="lsub">不是 AI 变聪明了，是<b>十四个人的判断</b>持续回流进系统。</div>
+        <svg id="ledgerline" viewBox="0 0 420 210" style="width:100%;height:auto;display:block;margin-top:10px;"></svg>
+      </div>
+      <div class="bignums">
+        <div class="bignum"><span class="bv num">1,284</span><span class="bl">次人工确认留痕<br>每一次都有名字</span></div>
+        <div class="bignum"><span class="bv num">612</span><span class="bl">小时工时释放<br>还给人的时间</span></div>
+      </div>
+      <div class="bignums">
+        <div class="bignum"><span class="bv num">217</span><span class="bl">件沉淀资产<br>配方 · 规则卡 · 案例 · 版本</span></div>
+        <div class="bignum"><span class="bv num">14</span><span class="bl">种世界形态<br>家族感 · 零撞车</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">十四世界 · 入口墙</span></div>
+
+  <!-- 入口墙 -->
+  <section class="reveal">
+    <div class="gatewall" id="gatewall"></div>
+  </section>
+
+  <!-- 终章 -->
+  <div class="finale reveal">
+    <svg class="fring" viewBox="0 0 220 220" id="bigring"></svg>
+    <h2 class="serif">环不是图形，是操作系统</h2>
+    <p>问 AI 怎么介入，得到的是功能；问人怎么被赋能，得到的是 Loop。<br>
+      十四个世界的共同语法只有一句：<b>信号主动来，判断永远在人，资产越滚越厚。</b></p>
+  </div>
+
+  <div class="footer">中宏保险 · Loop 升级打样 · 中控台整体版<br>大环天文台 · 十四个学员案例 · 同一个操作系统</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var HASH = location.hash || '';
+  var STATIC = HASH.indexOf('demo') >= 0;
+  if (STATIC) document.documentElement.classList.add('demo-static');
+  var LOOP=['信号','理解','行动','复盘','资产','回流'];
+  var GREEN='#00A758', GOLD='#D4A94E', STAR2='#9DBBAE', STAR3='#5F7F72';
+
+  /* 顶栏小环：中控台全环点亮 */
+  (function(){
+    var s='', cx=17, cy=17, r=12;
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2+j*Math.PI/3;
+      var x=(cx+r*Math.cos(a)).toFixed(1), y=(cy+r*Math.sin(a)).toFixed(1);
+      s+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="'+GOLD+'"/>';
+    }
+    s+='<circle cx="17" cy="17" r="16.2" fill="none" stroke="'+GOLD+'" stroke-width="0.9" opacity="0.8"/>';
+    s+='<circle cx="17" cy="17" r="3.4" fill="'+GREEN+'"/>';
+    document.getElementById('topring').innerHTML=s;
+  })();
+
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  /* ===== 数据 ===== */
+  var CASES=[
+    {id:'qiuyan', n:'陈秋燕', w:'陪跑账本', world:'晨纸 · 第二天早晨', lit:4, sig:'每天清晨账本已经翻开：昨晚的跟进、今天的名单、话术都备好。<b>转化率曲线不是 AI 的成绩单，是秋燕自己的成长账本。</b>', mv:'63%', ml:'首月转化率自校准 · 人的判断在线'},
+    {id:'wang', n:'王宇鹤', w:'夜航监护', world:'监护仪绿夜 · 智能体体检', lit:3, sig:'智能体健康墙彻夜值守，异常用例标红上屏。<b>痊愈盖章的那一下，是人对系统的验收。</b>', mv:'41 条', ml:'用例资产库 · 每次痊愈都入库'},
+    {id:'zhangzhimei', n:'张志梅', w:'木纹赛场', world:'暖木 · 私教训练器', lit:3, sig:'陪练脚本四维雷达随开口生长，违规话术标红对照。<b>分数长在人身上，长不在 AI 身上。</b>', mv:'54→82', ml:'四维雷达生长 · 一期训练'},
+    {id:'liuyamei', n:'刘娅梅', w:'电波雷达站', world:'雾绿 · 听见情绪', lit:1, sig:'客户原话先进雷达站：判 1 个主类型、测情绪等级、起草 2 条话术，红线词实时锁按钮。<b>按下发送键的手，永远是人的。</b>', mv:'10 秒', ml:'判型 + 话术起草 · 留痕到人'},
+    {id:'dujin', n:'杜津', w:'钢传送带', world:'冷钢 · 单据流转', lit:2, sig:'传送带昨夜跑了 47 单，异常单停在金色闸门口。<b>没问题的放行，有问题的拦下来等人落章。</b>', mv:'0.8 天', ml:'审批周期 2.3 → 0.8 天'},
+    {id:'tanghongzhe', n:'唐泓哲', w:'晨光温室', world:'玻璃绿 · 种子点亮', lit:4, sig:'散落的素材被 AI 逐一点亮成 6 张服务卡，拿不准的留着等人确认。<b>确认那一刻，简报才能带走。</b>', mv:'6 卡', ml:'种子点亮 · 待确认 2 处'},
+    {id:'guanqinghu', n:'管庆虎', w:'多周河流', world:'浅青 · 连续剧', lit:3, sig:'四条任务河流连续四周流淌，理论进度 AI 算、实际进度人拖滑块校准。<b>每一次校准，都让下周的模型更准。</b>', mv:'94%', ml:'预测准确率 78 → 94%'},
+    {id:'maqujun', n:'马瞿俊', w:'金库', world:'墨蓝黄铜 · 审计归档', lit:4, sig:'底稿进、四要素抽屉滑出，桑基图自动归档。<b>金库只收人签过字的条目。</b>', mv:'47 分', ml:'单条定稿 95 → 47 分钟'},
+    {id:'huangyaozong', n:'黄耀宗', w:'战术黑板', world:'深炭 · 训练赛季', lit:5, sig:'三期短板热力矩阵红转青，连续垫底自动升舱为一对一对练。<b>四项勾选全过，发布键才亮。</b>', mv:'20pt', ml:'NBS 短板三期收窄 63 → 21%'},
+    {id:'aaron', n:'Aaron', w:'扫雷地图', world:'米色点阵 · 送审前', lit:0, sig:'海报六模块逐块扫雷，v1 三处、v2 一处、v3 全绿。<b>每一次打回，都在把雷扫掉。</b>', mv:'86%', ml:'一次过审率 33 → 86%'},
+    {id:'hanqin', n:'韩琴', w:'配数台', world:'纸白墨绿 · 一句话变数据', lit:1, sig:'一句话进来，拆解表 / SQL / 清单三层工件出去，2 小时压成 90 秒。<b>执行前的最后一看，永远是人的审核。</b>', mv:'90 秒', ml:'单案配数 2 小时 → 90 秒'},
+    {id:'karen', n:'Karen', w:'信源花园', world:'晨绿 · 每月开花', lit:0, sig:'8 株信源植物，开花即有新知、枯萎提醒换源。<b>哪朵花配得上管理层，剪刀在她手里。</b>', mv:'81%', ml:'管理层相关率 58 → 81%'},
+    {id:'zhaozhichong', n:'赵智充', w:'监管风向仪', world:'风暴蓝 · 季度复盘', lit:0, sig:'八方位罗盘看八类违规消长，季度切换风向转动。<b>哪条案例配得上"典型"，由人来定。</b>', mv:'80%', ml:'风向研判命中率 55 → 80%'},
+    {id:'liuyamei-rules', n:'刘娅梅', w:'规则驿站', world:'米纸邮戳 · 取件不翻柜', lit:1, sig:'热词云货架点一下，规则卡打好包、盖好邮戳。<b>复杂件不硬答，打包转内勤。</b>', mv:'86%', ml:'首查命中率 62 → 86%'}
+  ];
+
+  /* ===== 天文台 ===== */
+  var sel=0, nodeFilter=-1;
+  function buildOrbit(){
+    var CX=300, CY=300, RO=212, RR=118;
+    var s='';
+    /* 星点背景 */
+    for (var st=0; st<40; st++){
+      var sx=(st*97)%580+10, sy=(st*173)%580+10;
+      s+='<circle cx="'+sx+'" cy="'+sy+'" r="'+(st%3===0?1.4:0.8)+'" fill="rgba(233,242,236,'+(0.08+(st%5)*0.03)+')"/>';
+    }
+    /* 轨道 */
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="'+RO+'" fill="none" stroke="rgba(212,169,78,.35)" stroke-width="1" stroke-dasharray="2 6"/>';
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="'+(RO-26)+'" fill="none" stroke="rgba(212,169,78,.14)" stroke-width="0.8"/>';
+    /* 中央六节点环 */
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="'+RR+'" fill="rgba(251,248,241,.03)" stroke="rgba(212,169,78,.5)" stroke-width="1.2"/>';
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="30" fill="rgba(0,167,88,.14)" stroke="'+GREEN+'" stroke-width="1.2"/>';
+    s+='<text x="'+CX+'" y="'+(CY+4)+'" text-anchor="middle" font-size="12" font-weight="800" fill="'+GREEN+'">LOOP</text>';
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2+j*Math.PI/3;
+      var nx=CX+RR*Math.cos(a), ny=CY+RR*Math.sin(a);
+      var lx=CX+(RR+32)*Math.cos(a), ly=CY+(RR+32)*Math.sin(a);
+      s+='<g class="ringnode" data-n="'+j+'" style="cursor:pointer;">'
+        +'<circle cx="'+nx.toFixed(1)+'" cy="'+ny.toFixed(1)+'" r="10" fill="#042B21" stroke="'+GOLD+'" stroke-width="1.6"/>'
+        +'<circle class="rndot" data-n="'+j+'" cx="'+nx.toFixed(1)+'" cy="'+ny.toFixed(1)+'" r="4.6" fill="'+GOLD+'" opacity=".85"/>'
+        +'<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12.5" font-weight="700" fill="#9DBBAE">'+LOOP[j]+'</text></g>';
+    }
+    /* 卫星（旋转层） */
+    s+='<g class="orbitg" style="transform-origin:300px 300px;'+(STATIC?'':'animation:orbspin 150s linear infinite;')+'">';
+    CASES.forEach(function(c,i){
+      var a=-Math.PI/2+i*(Math.PI*2/14);
+      var x=CX+RO*Math.cos(a), y=CY+RO*Math.sin(a);
+      s+='<g class="sat" data-i="'+i+'" style="cursor:pointer;transform-box:fill-box;transform-origin:center;'+(STATIC?'':'animation:orbspinrev 150s linear infinite;')+'">'
+        +'<circle class="sathalo" cx="'+x+'" cy="'+y+'" r="17" fill="none" stroke="'+GOLD+'" stroke-width="1.6" stroke-dasharray="4 4" opacity="0"/>'
+        +'<circle class="satdot" cx="'+x+'" cy="'+y+'" r="11.5" fill="#0A3D2E" stroke="'+GOLD+'" stroke-width="1.4"/>'
+        +'<text x="'+x+'" y="'+(y+3.8)+'" text-anchor="middle" font-size="10" font-weight="800" fill="#E4BE63" style="pointer-events:none;">'+(i+1)+'</text>'
+        +'</g>';
+    });
+    s+='</g>';
+    document.getElementById('orbit').innerHTML=s;
+
+    document.querySelectorAll('#orbit .sat').forEach(function(el){
+      el.addEventListener('click', function(){ selectCase(+this.dataset.i); });
+    });
+    document.querySelectorAll('#orbit .ringnode').forEach(function(el){
+      el.addEventListener('click', function(){
+        var n=+this.dataset.n;
+        nodeFilter = (nodeFilter===n)? -1 : n;
+        applyFilter();
+      });
+    });
+  }
+
+  function applyFilter(){
+    document.querySelectorAll('#orbit .sat').forEach(function(el){
+      var c=CASES[+el.dataset.i];
+      var dim = nodeFilter>=0 && c.lit!==nodeFilter;
+      el.style.opacity = dim? .18 : 1;
+      el.querySelector('.sathalo').setAttribute('opacity', (!dim && nodeFilter>=0)? '1':'0');
+    });
+    document.querySelectorAll('.nb').forEach(function(el){
+      el.classList.toggle('hot', +el.dataset.n===nodeFilter);
+    });
+    document.querySelectorAll('#orbit .rndot').forEach(function(el){
+      el.setAttribute('fill', (+el.dataset.n===nodeFilter)? GREEN : GOLD);
+    });
+    if (nodeFilter>=0){
+      var list=CASES.filter(function(c){return c.lit===nodeFilter;}).map(function(c){return c.n+'·'+c.w;}).join('、');
+      toast('签名节点「'+LOOP[nodeFilter]+'」：'+list);
+    }
+  }
+
+  function selectCase(i){
+    sel=i;
+    var c=CASES[i];
+    document.getElementById('pname').textContent=c.n+' · '+c.w;
+    document.getElementById('pworld').textContent=c.world;
+    document.getElementById('plit').textContent='签名节点 · '+LOOP[c.lit];
+    document.getElementById('psig').innerHTML='签名时刻：'+c.sig;
+    document.getElementById('pmetric').textContent=c.mv;
+    document.getElementById('pmlabel').textContent=c.ml;
+    document.getElementById('penter').setAttribute('href','../'+c.id+'/index.html');
+    document.querySelectorAll('#orbit .sat').forEach(function(el){
+      var on=+el.dataset.i===i;
+      el.querySelector('.satdot').setAttribute('fill', on? GOLD:'#0A3D2E');
+      el.querySelector('text').setAttribute('fill', on? '#042B21':'#E4BE63');
+      el.querySelector('.sathalo').setAttribute('opacity', on? '1':'0');
+    });
+    document.querySelectorAll('.chip').forEach(function(el){
+      el.classList.toggle('on', +el.dataset.i===i);
+    });
+  }
+
+  /* chips */
+  (function(){
+    var h='';
+    CASES.forEach(function(c,i){
+      h+='<button class="chip" data-i="'+i+'">'+(i+1)+' '+c.n+'·'+c.w+'</button>';
+    });
+    document.getElementById('chips').innerHTML=h;
+    document.querySelectorAll('.chip').forEach(function(el){
+      el.addEventListener('click', function(){ selectCase(+this.dataset.i); });
+    });
+  })();
+
+  /* 覆盖带 */
+  (function(){
+    var hints={0:'外部信号主动推送',1:'上下文与语义拆解',2:'关键时刻人的落章',3:'留痕与复盘对照',4:'资产沉淀入库',5:'成果喂回系统'};
+    var h='';
+    for (var n=0;n<6;n++){
+      var list=CASES.filter(function(c){return c.lit===n;});
+      h+='<div class="nb" data-n="'+n+'"><div class="ndot"></div><div class="nn">'+LOOP[n]+'</div>'
+        +'<div class="nc num">'+list.length+'</div><div class="nl2">'+hints[n]+'</div>'
+        +'<div class="nlist">'+list.map(function(c){return c.n+'·'+c.w;}).join('<br>')+'</div></div>';
+    }
+    document.getElementById('nodeband').innerHTML=h;
+    document.querySelectorAll('.nb').forEach(function(el){
+      el.addEventListener('click', function(){
+        var n=+this.dataset.n;
+        nodeFilter = (nodeFilter===n)? -1 : n;
+        applyFilter();
+      });
+    });
+  })();
+
+  /* ===== 回流网 ===== */
+  var ORDER=[11,4,12,3,6,10,13,7,9,5,1,2,0,8]; /* 位置 → CASES 下标 */
+  var SHORT={11:'Karen',4:'杜津',12:'智充',3:'娅梅·雷达',6:'庆虎',10:'韩琴',13:'娅梅·驿站',7:'瞿俊',9:'Aaron',5:'泓哲',1:'宇鹤',2:'志梅',0:'秋燕',8:'耀宗'};
+  var FLOWS=[
+    {f:0,t:9,  lb:'简报素材 → 康养分析', ly:105},
+    {f:1,t:7,  lb:'审批例外理由 → 审计线索', ly:150},
+    {f:2,t:8,  lb:'监管风向词 → 海报雷区', ly:130},
+    {f:3,t:11, lb:'客诉红线词 → 陪练违规库', ly:126},
+    {f:4,t:13, lb:'项目滞后节奏 → 培训排期', ly:100},
+    {f:5,t:10, lb:'测试配方 → 智能体体检', ly:158},
+    {f:6,t:12, lb:'新规则卡 → 陪跑知识包', ly:118},
+    {f:7,t:13, lb:'审计专题 → 复盘课题', ly:140}
+  ];
+  (function(){
+    var Y=252, s='';
+    FLOWS.forEach(function(fl,k){
+      var x1=60+fl.f*80, x2=60+fl.t*80;
+      var span=Math.abs(fl.t-fl.f), h=42+span*9.5;
+      var mx=(x1+x2)/2;
+      s+='<path d="M'+x1+','+Y+' Q'+mx+','+(Y-2*h)+' '+x2+','+Y+'" fill="none" stroke="'+GOLD+'" stroke-width="1.6" opacity=".8" stroke-dasharray="5 6" '+(STATIC?'':'class="flowdash" style="animation:dashmove 2.2s linear infinite;"')+'/>';
+      s+='<circle cx="'+x2+'" cy="'+Y+'" r="4.5" fill="'+GOLD+'"/>';
+      s+='<text x="'+mx+'" y="'+fl.ly+'" text-anchor="middle" font-size="11" font-weight="700" fill="#D4A94E" opacity=".95">'+fl.lb+'</text>';
+    });
+    ORDER.forEach(function(ci,pos){
+      var x=60+pos*80;
+      s+='<line x1="'+x+'" y1="'+Y+'" x2="'+x+'" y2="'+(Y+8)+'" stroke="rgba(212,169,78,.5)" stroke-width="1.2"/>';
+      s+='<circle cx="'+x+'" cy="'+Y+'" r="6.5" fill="#0A3D2E" stroke="'+GOLD+'" stroke-width="1.4"/>';
+      s+='<text x="'+x+'" y="'+(Y+26)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#9DBBAE">'+SHORT[ci]+'</text>';
+    });
+    document.getElementById('flows').innerHTML=s;
+  })();
+
+  /* 回流故事卡 */
+  (function(){
+    var S=[
+      ['监管风向仪','扫雷地图','Q3 监管点名"销售误导回潮"——风向词库同步更新海报雷区预检项。<b>Aaron 的下张海报，雷已提前标好。</b>'],
+      ['电波雷达站','木纹赛场','客诉里的高危原话沉淀为红线词，直接进陪练违规检测。<b>训练场的雷，来自真实战场。</b>'],
+      ['信源花园','晨光温室','Karen 剪进简报的行业素材，成为泓哲康养分析的信源养料。<b>剪过的花，在温室继续生长。</b>'],
+      ['配数台','夜航监护','韩琴审过的测试配方，供宇鹤给智能体做体检时直接调用。<b>90 秒的配方，守护 41 条用例。</b>'],
+      ['钢传送带','金库','杜津驳回单据的理由留痕，成为瞿俊审计抽样的线索池。<b>每一次例外，都是审计的入口。</b>'],
+      ['规则驿站','陪跑账本','驿站回流的新规则卡，成为秋燕陪跑名单的知识包。<b>内勤的答复，变成代理人的弹药。</b>'],
+      ['金库','战术黑板','审计问题聚类成专题，转化为耀宗培训复盘的课题。<b>审计发现，变成训练科目。</b>'],
+      ['多周河流','战术黑板','项目周报的滞后模式，为培训排期提供节奏参考。<b>项目的河道，校准训练的赛季。</b>']
+    ];
+    var h='';
+    S.forEach(function(x){
+      h+='<div class="flowcard"><div class="fr">'+x[0]+' <span class="far">⇢</span> '+x[1]+'</div><p>'+x[2]+'</p></div>';
+    });
+    document.getElementById('flowgrid').innerHTML=h;
+  })();
+
+  /* ===== 总账曲线 54 → 89% ===== */
+  (function(){
+    var pts=[[54,'3 月'],[61,'4 月'],[68,'5 月'],[74,'6 月'],[81,'7 月'],[89,'8 月']];
+    var X0=44,X1=392,Y0=176,Y1=36;
+    function px(i){ return X0+(X1-X0)*i/5; }
+    function py(v){ return Y0-(Y0-Y1)*(v-45)/(95-45); }
+    var d=''; pts.forEach(function(p,i){ d+=(i?' L':'M')+px(i)+','+py(p[0]).toFixed(1); });
+    var s='<path d="'+d+' L'+px(5)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(0,167,88,.12)"/>';
+    s+='<path id="lline" d="'+d+'" fill="none" stroke="'+GREEN+'" stroke-width="2.8" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="4.6" fill="'+(i===5?GREEN:'#042B21')+'" stroke="'+GREEN+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])-11)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#E9F2EC" font-family="Georgia,serif">'+p[0]+'%</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+19)+'" text-anchor="middle" font-size="10" fill="'+STAR3+'">'+p[1]+'</text>';
+    });
+    document.getElementById('ledgerline').innerHTML=s;
+    var gl=document.getElementById('lline'), len=gl.getTotalLength();
+    if (!STATIC){
+      gl.style.strokeDasharray=len; gl.style.strokeDashoffset=len;
+      setTimeout(function(){ gl.style.transition='stroke-dashoffset 1.8s cubic-bezier(.2,.8,.2,1)'; gl.style.strokeDashoffset='0'; },400);
+    }
+  })();
+
+  /* 入口墙 */
+  (function(){
+    var h='';
+    CASES.forEach(function(c,i){
+      h+='<a class="gate" href="../'+c.id+'/index.html"><span class="gi">'+(i+1)+'</span>'
+        +'<span><span class="gn">'+c.n+' · '+c.w+'</span><span class="gw" style="display:block;">'+c.world+' · 签名「'+LOOP[c.lit]+'」</span></span></a>';
+    });
+    document.getElementById('gatewall').innerHTML=h;
+  })();
+
+  /* 数字滚动 */
+  if (!STATIC){
+    document.querySelectorAll('.nv').forEach(function(el){
+      var target=+el.dataset.n, start=null, dur=1400;
+      function tick(ts){
+        if(!start) start=ts;
+        var p=Math.min(1,(ts-start)/dur);
+        el.textContent=Math.round(target*(1-Math.pow(1-p,3)));
+        if(p<1) requestAnimationFrame(tick);
+      }
+      setTimeout(function(){ requestAnimationFrame(tick); },400);
+    });
+  } else {
+    document.querySelectorAll('.nv').forEach(function(el){ el.textContent=el.dataset.n; });
+  }
+
+  /* 终章大环：六节点全亮 */
+  (function(){
+    var cx=110, cy=110, r=86, s='';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(212,169,78,.4)" stroke-width="1.4"/>';
+    for (var i=0;i<6;i++){
+      var a=-Math.PI/2+i*Math.PI/3;
+      var x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      var lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a);
+      s+='<circle class="fn" data-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7.5" fill="#1A4A3A" stroke="#03251D" stroke-width="2"/>';
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#9DBBAE">'+LOOP[i]+'</text>';
+    }
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+GOLD+'"/>';
+    document.getElementById('bigring').innerHTML=s;
+  })();
+  function lightFinale(){
+    document.querySelectorAll('#bigring .fn').forEach(function(n,i){
+      setTimeout(function(){
+        n.setAttribute('fill', i%2? GOLD : GREEN);
+        n.style.transition='fill .5s';
+      }, STATIC?0:i*220);
+    });
+  }
+
+  buildOrbit();
+  selectCase(0);
+
+  /* 出现动画 */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if (e.target.querySelector && e.target.querySelector('#bigring')) lightFinale();
+      io.unobserve(e.target);
+    });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  if (STATIC){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+    lightFinale();
+  }
+})();
+</script>
+<style>
+@keyframes orbspin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes orbspinrev{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
+@keyframes dashmove{to{stroke-dashoffset:-22;}}
+</style>
+</body>
+</html>
