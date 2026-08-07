@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海报合规文案 · 扫雷地图</title>
+<style>
+  :root{
+    --desk:#FAF9F5; --paper:#FFFFFF; --paper2:#F3F1EA;
+    --ink:#2A2E33; --ink2:#646C74; --ink3:#98A0A8;
+    --green:#00A758; --deep:#004B3A; --mist:#DDEDE7;
+    --gold:#C89A3A; --coral:#B65F50; --coralbg:#F9ECE7;
+    --line:rgba(40,50,60,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(rgba(40,50,60,.07) 1px, transparent 1.4px) 0 0/26px 26px,
+      radial-gradient(900px 420px at 88% -6%, rgba(0,167,88,.06), transparent 60%),
+      linear-gradient(165deg,#FBFAF6,#F2F0E9 60%,#F7F5EF);
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif;}
+  .num{font-family:Georgia,"Times New Roman",serif;}
+  .mono{font-family:"SF Mono",Menlo,monospace;}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:14px 34px;background:rgba(250,249,245,.88);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .loopmark{width:34px;height:34px;flex:none;}
+  .topbar .name{font-size:15px;font-weight:700;}
+  .topbar .world{font-size:11px;color:var(--ink2);letter-spacing:.28em;margin-top:2px;}
+  .topbar .spacer{flex:1;}
+  .badge-test{font-size:10.5px;letter-spacing:.14em;color:var(--coral);
+    border:1px solid rgba(182,95,80,.4);border-radius:999px;padding:4px 12px;
+    background:rgba(249,236,231,.7);white-space:nowrap;}
+  .backlink{font-size:12.5px;color:var(--ink2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .25s;white-space:nowrap;}
+  .backlink:hover{color:var(--deep);border-color:var(--deep);}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:0 34px;}
+  .rule{display:flex;align-items:center;gap:18px;margin:72px 0 40px;}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(200,154,58,.6));}
+  .rule::after{background:linear-gradient(90deg,rgba(200,154,58,.6),transparent);}
+  .rule .rt{font-size:11px;letter-spacing:.42em;color:var(--gold);white-space:nowrap;font-weight:600;}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 1px 2px rgba(40,50,60,.05),0 14px 34px -18px rgba(40,50,60,.22);}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .demo-static .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .demo-static *{animation:none!important;}
+
+  .hero{padding:70px 0 6px;display:grid;grid-template-columns:1.35fr 1fr;gap:30px;align-items:end;}
+  .hero .clock{font-size:15px;color:var(--ink2);letter-spacing:.1em;}
+  .hero h1{font-size:46px;line-height:1.2;font-weight:700;margin-top:12px;}
+  .hero h1 em{font-style:normal;color:var(--deep);}
+  .hero .sub{font-size:15px;line-height:1.9;color:var(--ink2);max-width:560px;margin-top:14px;}
+  .hero .sub b{color:var(--ink);font-weight:600;}
+  .hero .sig{background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);
+    border-radius:0 16px 16px 0;padding:18px 22px;}
+  .hero .sig .q{font-size:17px;line-height:1.8;font-weight:600;}
+  .hero .sig .q b{color:var(--coral);}
+  .hero .sig .q .ok{color:var(--green);}
+  .hero .sig .a{font-size:12px;color:var(--ink3);margin-top:7px;}
+
+  /* 扫雷台 */
+  .mine{display:grid;grid-template-columns:400px 1fr;gap:22px;}
+  .postercard{padding:26px;display:flex;flex-direction:column;align-items:center;}
+  .vpills{display:flex;gap:8px;margin-bottom:16px;}
+  .vpill{font-size:12.5px;font-weight:700;padding:8px 18px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper2);color:var(--ink2);font-family:inherit;transition:all .3s;}
+  .vpill.on{background:var(--deep);color:#F2F7F4;border-color:var(--deep);}
+  .vpill:hover:not(.on){border-color:var(--deep);color:var(--deep);}
+  .poster{width:300px;border-radius:14px;border:1px solid var(--line);overflow:hidden;background:#FDFDFB;
+    box-shadow:0 20px 44px -20px rgba(40,50,60,.35);}
+  .pmod{position:relative;padding:13px 16px;border-bottom:1px dashed rgba(40,50,60,.14);transition:background .4s;}
+  .pmod:last-child{border-bottom:none;}
+  .pmod .pmname{font-size:10px;letter-spacing:.2em;color:var(--ink3);font-weight:700;}
+  .pmod .pmtxt{font-size:12px;line-height:1.65;color:var(--ink2);margin-top:4px;}
+  .pmod .pmtxt b{color:var(--ink);}
+  .pmod .badword{background:linear-gradient(transparent 60%,rgba(182,95,80,.35) 60%);color:var(--coral);font-weight:700;}
+  .pmod .mine-dot{position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;
+    background:var(--coral);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 4px rgba(182,95,80,.18);}
+  .pmod.hit{background:var(--coralbg);cursor:pointer;}
+  .pmod.clear .mine-dot{background:var(--green);box-shadow:0 0 0 4px rgba(0,167,88,.14);}
+  .visualbox{height:88px;display:flex;align-items:center;justify-content:center;
+    background:repeating-linear-gradient(45deg,#F4F2EC 0 10px,#FBFAF6 10px 20px);color:var(--ink3);font-size:11px;letter-spacing:.14em;}
+  .posterverdict{margin-top:14px;font-size:12.5px;font-weight:700;min-height:20px;text-align:center;}
+
+  .reasoncard{padding:26px;display:flex;flex-direction:column;}
+  .reasoncard h3{font-size:16px;font-weight:800;}
+  .reasoncard .rsub{font-size:12px;color:var(--ink2);margin-top:5px;}
+  .reasons{margin-top:14px;display:flex;flex-direction:column;gap:10px;flex:1;}
+  .ritem{display:flex;gap:11px;font-size:12.5px;line-height:1.7;color:var(--ink2);
+    background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:12px 15px;}
+  .ritem .rx{flex:none;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;margin-top:1px;}
+  .ritem.fix .rx{background:var(--mist);color:var(--deep);}
+  .ritem.vio .rx{background:var(--coralbg);color:var(--coral);}
+  .ritem b{color:var(--ink);font-weight:700;}
+  .pareto{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);}
+  .pareto .pt{font-size:11px;letter-spacing:.2em;color:var(--ink3);font-weight:700;}
+  .pbar{display:flex;align-items:center;gap:10px;margin-top:9px;font-size:11.5px;}
+  .pbar .pn{width:104px;color:var(--ink2);text-align:right;white-space:nowrap;}
+  .pbar .pt2{flex:1;height:16px;border-radius:5px;background:var(--paper2);overflow:hidden;}
+  .pbar .pt2 i{display:block;height:100%;border-radius:5px;width:0;transition:width 1s cubic-bezier(.2,.8,.2,1);}
+  .pbar .pv{width:66px;color:var(--ink);font-weight:700;font-family:Georgia,serif;font-size:12px;}
+  .pbar .pv small{color:var(--ink3);font-weight:400;font-family:inherit;}
+  .pbar.clean .pt2 i{background:var(--green)!important;}
+  .pbar .zero{color:var(--green);}
+
+  /* 人的行动：模块化文案 */
+  .draftcard{padding:28px;}
+  .draftcard h3{font-size:16px;font-weight:800;}
+  .draftgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
+  .dmod{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+  .dmod .dt{font-size:10.5px;letter-spacing:.2em;color:var(--deep);font-weight:800;}
+  .dmod .dx{font-size:12.5px;line-height:1.8;color:var(--ink2);margin-top:7px;}
+  .dmod .dx b{color:var(--ink);}
+  .dmod .src{font-size:10.5px;color:var(--gold);font-weight:700;margin-top:6px;}
+  .filterdemo{margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .filterdemo .ft{font-size:12px;color:var(--ink2);font-weight:600;}
+  .fword{font-size:11.5px;border-radius:8px;padding:6px 12px;font-weight:700;
+    background:var(--coralbg);color:var(--coral);border:1px solid rgba(182,95,80,.35);text-decoration:line-through;}
+  .farrow{color:var(--ink3);font-size:12px;}
+  .fsafe{font-size:11.5px;border-radius:8px;padding:6px 12px;font-weight:700;
+    background:var(--mist);color:var(--deep);border:1px solid rgba(0,75,58,.25);}
+  .finalrow{margin-top:20px;display:flex;align-items:center;gap:16px;}
+  .finalbtn{font-size:15px;font-weight:800;letter-spacing:.04em;border:none;border-radius:999px;
+    padding:16px 34px;cursor:pointer;font-family:inherit;color:#F6FCF8;
+    background:linear-gradient(135deg,#00A758,#008348);
+    box-shadow:0 0 0 5px rgba(0,167,88,.15),0 18px 36px -14px rgba(0,167,88,.6);transition:transform .3s;}
+  .finalbtn:hover{transform:translateY(-2px);}
+  .finalnote{font-size:12px;color:var(--ink2);line-height:1.8;}
+
+  /* 合环 */
+  .assets{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;}
+  .acard{padding:24px;}
+  .acard h4{font-size:14.5px;font-weight:700;}
+  .vtree{margin-top:16px;display:flex;align-items:center;gap:0;}
+  .vnode{flex:1;text-align:center;position:relative;}
+  .vnode::before{content:"";position:absolute;top:19px;left:-50%;width:100%;height:2px;background:var(--line);z-index:0;}
+  .vnode:first-child::before{display:none;}
+  .vnode .vb{position:relative;z-index:1;width:38px;height:38px;border-radius:50%;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;
+    background:var(--paper);border:2px solid var(--coral);color:var(--coral);}
+  .vnode.pass .vb{border-color:var(--green);color:#fff;background:var(--green);}
+  .vnode .vl{font-size:11px;color:var(--ink2);margin-top:8px;}
+  .vnode .vs{font-size:10px;color:var(--ink3);margin-top:2px;}
+  .alist{margin-top:14px;display:flex;flex-direction:column;gap:11px;}
+  .aitem{display:flex;gap:10px;font-size:12.5px;line-height:1.75;color:var(--ink2);}
+  .aitem .tick{flex:none;width:18px;height:18px;border-radius:50%;background:var(--mist);
+    color:var(--deep);font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;font-weight:700;}
+  .aitem b{color:var(--ink);font-weight:600;}
+
+  .finale{margin-top:80px;text-align:center;padding-bottom:26px;}
+  .finale .fring{width:200px;height:200px;margin:0 auto;}
+  .finale h2{font-size:28px;margin-top:30px;font-weight:700;}
+  .finale p{margin:12px auto 0;font-size:14px;line-height:2.0;color:var(--ink2);max-width:600px;}
+  .finale p b{color:var(--deep);}
+  .footer{padding:30px 0 42px;text-align:center;font-size:11.5px;color:var(--ink3);letter-spacing:.1em;line-height:2.1;}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);z-index:99;
+    background:var(--deep);color:#EAF4EF;font-size:13px;font-weight:600;
+    padding:13px 26px;border-radius:999px;box-shadow:0 18px 40px -12px rgba(0,40,30,.5);
+    transition:transform .45s cubic-bezier(.2,.9,.3,1.2);}
+  .toast.show{transform:translate(-50%,0);}
+
+  @media (max-width:960px){
+    .hero,.mine,.draftgrid,.assets{grid-template-columns:1fr;}
+    .hero h1{font-size:34px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶栏：本页点亮「信号」 -->
+<div class="topbar">
+  <svg class="loopmark" viewBox="0 0 34 34" id="topring"></svg>
+  <div>
+    <div class="name">海报合规文案助手</div>
+    <div class="world">扫雷地图 · 从打回到过审</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge-test">内部测试 · 模拟数据</span>
+  <a class="backlink" href="../index.html">← 返回总览</a>
+</div>
+
+<div class="wrap">
+
+  <!-- 第一幕：早晨（快） -->
+  <section class="hero reveal">
+    <div>
+      <span class="clock mono">09:05 · 周二 · 市场组</span>
+      <h1 class="serif">早，小安。<br>这张分红险海报，<br><em>终于一次过审了。</em></h1>
+      <p class="sub">v1 被打回 3 处、v2 还差 1 处——每一次打回原因 AI 都记在小本本上。到 v3，<b>雷已经提前替你扫完了</b>。终审那一下，还是你来按。</p>
+    </div>
+    <div class="sig">
+      <p class="q">「分红表述」过去 3 个月被打回 <b>7 次</b>——<br>AI 学会之后，这个月起 <span class="ok">0 次</span>。</p>
+      <p class="a">踩坑清单在进化：打回的原因，变成下次的预检项</p>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">签名时刻 · 前 8 秒</span></div>
+
+  <!-- 第二幕：扫雷地图 -->
+  <section class="reveal">
+    <div class="mine">
+      <div class="card postercard">
+        <div class="vpills">
+          <button class="vpill" data-v="1">v1 · 被打回</button>
+          <button class="vpill" data-v="2">v2 · 再改</button>
+          <button class="vpill on" data-v="3">v3 · 过审</button>
+        </div>
+        <div class="poster" id="poster"></div>
+        <div class="posterverdict" id="verdict"></div>
+      </div>
+      <div class="card reasoncard">
+        <h3 id="rtitle">v3 · 预检全部通过</h3>
+        <p class="rsub" id="rsub">6 个模块 · 0 处违规 · 踩坑清单预检 12 项全绿</p>
+        <div class="reasons" id="reasons"></div>
+        <div class="pareto">
+          <span class="pt">近 90 天打回原因帕累托 · 80% 的雷集中在 2 个模块</span>
+          <div id="pareto"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">人的行动 · AI 起草，人终审</span></div>
+
+  <!-- 第三幕：模块化草稿 -->
+  <section class="reveal">
+    <div class="card draftcard">
+      <h3>v3 文案草稿 · 模块化，每个数值都有出处</h3>
+      <div class="draftgrid">
+        <div class="dmod">
+          <div class="dt">产品主标题</div>
+          <p class="dx"><b>「鑫福年年 · 给时间一点红利」</b>（11 字，无夸大用语）</p>
+        </div>
+        <div class="dmod">
+          <div class="dt">投保规则</div>
+          <p class="dx">投保年龄 30 天–65 岁 · 交费期间 5/10 年 · 保险期间终身 · 保障：生存金 + 身故保险金</p>
+          <p class="src">来源：产品条款 §2.1–2.4</p>
+        </div>
+        <div class="dmod">
+          <div class="dt">利益演示（示例）</div>
+          <p class="dx">30 岁男性 · 10 年交 · 年交 10 万：第 10 保单年度现金价值 <b>¥1,028,400</b></p>
+          <p class="src">来源：30 岁男性 10 年交数据组 · 演示利益非保证</p>
+        </div>
+        <div class="dmod">
+          <div class="dt">合规提示（自动插入）</div>
+          <p class="dx">「红利分配是不确定的，在某些年度红利可能为零。」</p>
+          <p class="src">匹配：分红型产品监管话术库</p>
+        </div>
+      </div>
+      <div class="filterdemo">
+        <span class="ft">禁用词过滤演示：</span>
+        <span class="fword">高收益</span><span class="farrow">→</span>
+        <span class="fword">稳赚</span><span class="farrow">→</span>
+        <span class="fword"> guaranteed</span><span class="farrow">→</span>
+        <span class="fsafe">已自动拦截 · 替换为合规表述</span>
+      </div>
+      <div class="finalrow">
+        <button class="finalbtn" id="finalbtn">人工终审 · 提交发布</button>
+        <p class="finalnote">AI 不猜数据、不创作收益承诺、不替你选图——<br>终审、发布、合规判断，必须由人完成。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">合环 · 雷区越来越小</span></div>
+
+  <!-- 第四幕：合环 -->
+  <section class="reveal">
+    <div class="assets">
+      <div class="card acard">
+        <h4>版本树 · 本海报</h4>
+        <div class="vtree">
+          <div class="vnode"><div class="vb">✗</div><div class="vl">v1</div><div class="vs">打回 3 处</div></div>
+          <div class="vnode"><div class="vb">✗</div><div class="vl">v2</div><div class="vs">打回 1 处</div></div>
+          <div class="vnode pass"><div class="vb">✓</div><div class="vl">v3</div><div class="vs">过审 · 已归档</div></div>
+        </div>
+        <p style="font-size:11.5px;color:var(--ink3);margin-top:14px;line-height:1.7;">每次打回原因、修改人、时间点全程留痕，版本可回溯。</p>
+      </div>
+      <div class="card acard">
+        <h4>一次过审率 · 逐月</h4>
+        <svg id="growth" viewBox="0 0 360 190" style="width:100%;display:block;margin-top:8px;"></svg>
+        <p style="font-size:12px;color:var(--ink2);line-height:1.8;margin-top:4px;">33% → 86%。不是审核变松了，是<b style="color:var(--deep)">交上去的稿子越来越干净</b>。</p>
+      </div>
+      <div class="card acard">
+        <h4>回流 · 踩坑清单进化</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">✓</span><span>「分红表述」打回 7 次 → <b>已学会</b>，本月预检拦截 0 次</span></div>
+          <div class="aitem"><span class="tick">✓</span><span>「数值无来源」新增为<b>强制预检项</b>：没出处不让过</span></div>
+          <div class="aitem"><span class="tick">✓</span><span>v3 过审版入<b>海报版本库</b>，成为同类产品的起稿模板</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finale">
+      <svg class="fring" viewBox="-30 -30 270 270" id="bigring"></svg>
+      <h2 class="serif">每一次打回，都在把雷扫掉。</h2>
+      <p>海报任务 → AI 起草模块化文案 → 人修改、终审 → 过审归档 → 版本入库 → <b>打回原因回流成预检项，下张海报雷区更小</b>。</p>
+    </div>
+  </section>
+
+  <div class="footer">
+    海报合规文案助手 · 扫雷地图 Demo　|　内部测试 · 模拟数据　|　输出仅为内部草稿，未经审核严禁对外<br>
+    Loop：信号 → 理解 → 行动 → 复盘 → 资产 → 回流
+  </div>
+
+</div>
+
+<div class="toast" id="toast">已提交终审 · 留痕</div>
+
+<script>
+(function(){
+  var HASH = location.hash || '';
+  var STATIC = HASH.indexOf('demo') >= 0;
+  if (STATIC) document.documentElement.classList.add('demo-static');
+  var LOOP=['信号','理解','行动','复盘','资产','回流'];
+  var LIT=0;
+  var GREEN='#00A758', DEEP='#004B3A', GOLD='#C89A3A', CORAL='#B65F50', INK3='#98A0A8';
+
+  /* 顶栏小环 */
+  (function(){
+    var s='', cx=17, cy=17, r=12;
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2+j*Math.PI/3;
+      var x=(cx+r*Math.cos(a)).toFixed(1), y=(cy+r*Math.sin(a)).toFixed(1);
+      s+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===LIT?3.6:2.2)+'" fill="'+(j===LIT?GREEN:'#B9C0B9')+'"/>';
+    }
+    s+='<circle cx="17" cy="17" r="16.2" fill="none" stroke="'+GOLD+'" stroke-width="0.8" opacity="0.65"/>';
+    document.getElementById('topring').innerHTML=s;
+  })();
+
+  /* 海报模块 × 三版本 */
+  // mines: 该模块在各版本的违规数
+  var MODS = [
+    {name:'产品主标题', txt:{1:'「鑫福年年 · <span class="badword">收益稳涨</span>看得见」',2:'「鑫福年年 · 给时间一点红利」',3:'「鑫福年年 · 给时间一点红利」'}, mines:[1,0,0]},
+    {name:'主视觉占位', visual:true, mines:[0,0,0]},
+    {name:'投保规则', txt:{1:'投保年龄 30 天–65 岁 · 5/10 年交 · 终身保障',2:'投保年龄 30 天–65 岁 · 5/10 年交 · 终身保障',3:'投保年龄 30 天–65 岁 · 5/10 年交 · 终身保障'}, mines:[0,0,0]},
+    {name:'利益演示', txt:{1:'第 10 年现金价值 ¥1,028,400（<span class="badword">未标注来源与条件</span>）',2:'30 岁男性 · 10 年交：第 10 年现金价值 ¥1,028,400 · 来源已标注',3:'30 岁男性 · 10 年交：第 10 年现金价值 ¥1,028,400 · 来源已标注'}, mines:[1,0,0]},
+    {name:'合规提示', txt:{1:'（<span class="badword">缺少分红险监管话术</span>）',2:'「红利分配是不确定的」（<span class="badword">句式与监管原文有出入</span>）',3:'「红利分配是不确定的，在某些年度红利可能为零。」'}, mines:[1,1,0]},
+    {name:'代理人宣传', txt:{1:'「星级代理人推荐 · <span class="badword">达成率第一</span>」',2:'「星级代理人推荐」· 仅复述，不加工',3:'「星级代理人推荐」· 仅复述，不加工'}, mines:[1,0,0]}
+  ];
+  var REASONS = {
+    1: {title:'v1 · 被打回 3 处', sub:'合规审核意见 · 打回人：合规岗 周老师', items:[
+      ['vio','<b>主标题</b>：「收益稳涨」属收益承诺类禁用词，必须删除'],
+      ['vio','<b>利益演示</b>：数值未标注来源条件（哪组数据、什么交费方式）'],
+      ['vio','<b>合规提示</b>：分红型产品必须插入监管话术，原文照引'],
+      ['vio','<b>代理人宣传</b>：「达成率第一」无凭据，且不可加工夸大']
+    ]},
+    2: {title:'v2 · 还差 1 处', sub:'合规审核意见 · 打回人：合规岗 周老师', items:[
+      ['fix','<b>主标题</b>：已改为「给时间一点红利」· 通过'],
+      ['fix','<b>利益演示</b>：已标注「30 岁男性 · 10 年交」· 通过'],
+      ['vio','<b>合规提示</b>：话术与监管原文有出入——「可能为零」不可省'],
+      ['fix','<b>代理人宣传</b>：已改为仅复述 · 通过']
+    ]},
+    3: {title:'v3 · 预检全部通过', sub:'6 个模块 · 0 处违规 · 踩坑清单预检 12 项全绿', items:[
+      ['fix','<b>主标题</b>：无禁用词 · 11 字'],
+      ['fix','<b>利益演示</b>：数值、条件、来源三要素齐全'],
+      ['fix','<b>合规提示</b>：监管话术原文照引，一字不差'],
+      ['fix','<b>代理人宣传</b>：仅复述用户提供内容，未加工']
+    ]}
+  };
+  var curV = 3;
+  function renderPoster(){
+    var h='';
+    MODS.forEach(function(m){
+      var mines = m.mines[curV-1];
+      var cls = mines ? 'pmod hit' : 'pmod clear';
+      h += '<div class="'+cls+'">';
+      if (m.visual){
+        h += '<div class="visualbox">此处插入主视觉图 · 建议：家庭 / 养老 / 专业服务</div>';
+      } else {
+        h += '<div class="pmname">'+m.name+'</div><div class="pmtxt">'+(m.txt[curV]||'')+'</div>';
+      }
+      h += '<span class="mine-dot">'+(mines ? mines : '✓')+'</span>';
+      h += '</div>';
+    });
+    document.getElementById('poster').innerHTML = h;
+    var r = REASONS[curV];
+    document.getElementById('rtitle').textContent = r.title;
+    document.getElementById('rsub').textContent = r.sub;
+    var rh='';
+    r.items.forEach(function(it){
+      rh += '<div class="ritem '+it[0]+'"><span class="rx">'+(it[0]==='vio'?'✗':'✓')+'</span><span>'+it[1]+'</span></div>';
+    });
+    document.getElementById('reasons').innerHTML = rh;
+    var v = document.getElementById('verdict');
+    if (curV===1){ v.textContent='✗ 合规打回 · 4 处需修改'; v.style.color=CORAL; }
+    else if (curV===2){ v.textContent='✗ 合规打回 · 剩 1 处'; v.style.color=CORAL; }
+    else { v.textContent='✓ 预检通过 · 等待人工终审'; v.style.color=GREEN; }
+  }
+  document.querySelectorAll('.vpill').forEach(function(b){
+    b.addEventListener('click', function(){
+      curV = +b.getAttribute('data-v');
+      document.querySelectorAll('.vpill').forEach(function(x){ x.classList.toggle('on', x===b); });
+      renderPoster();
+    });
+  });
+  renderPoster();
+
+  /* 帕累托 */
+  (function(){
+    var data=[['分红表述',7,'44%'],['数值缺来源',4,'25%'],['缺监管话术',3,'19%'],['代理人夸大',1,'6%'],['其他',1,'6%']];
+    var h='';
+    data.forEach(function(d,i){
+      var w = d[1]/7*100;
+      var col = i<2 ? 'var(--coral)' : (i<4?'var(--gold)':'#B9C0B9');
+      h += '<div class="pbar"><span class="pn">'+d[0]+'</span><span class="pt2"><i data-w="'+w+'" style="background:'+col+'"></i></span><span class="pv">'+d[1]+' 次 <small>'+d[2]+'</small></span></div>';
+    });
+    document.getElementById('pareto').innerHTML = h;
+    setTimeout(function(){
+      document.querySelectorAll('#pareto .pt2 i').forEach(function(bar){
+        bar.style.width = bar.getAttribute('data-w')+'%';
+      });
+    }, STATIC?0:400);
+  })();
+
+  /* 终审 */
+  document.getElementById('finalbtn').addEventListener('click', function(){
+    this.textContent = '✓ 已提交终审 · v3 归档';
+    this.style.background = 'linear-gradient(135deg,#004B3A,#013326)';
+    this.disabled = true;
+    var t=document.getElementById('toast');
+    t.textContent='v3 已提交发布 · 终审人：小安 · 已留痕';
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  });
+
+  /* 一次过审率曲线 */
+  (function(){
+    var pts=[[33,'5 月'],[55,'6 月'],[71,'7 月'],[86,'本月']];
+    var X0=44,X1=330,Y0=150,Y1=34;
+    function px(i){ return X0+(X1-X0)*i/3; }
+    function py(v){ return Y0-(Y0-Y1)*(v-25)/(95-25); }
+    var d=''; pts.forEach(function(p,i){ d+=(i?' L':'M')+px(i)+','+py(p[0]).toFixed(1); });
+    var s='<path d="'+d+' L'+px(3)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(0,167,88,.09)"/>';
+    s+='<path id="gline" d="'+d+'" fill="none" stroke="'+GREEN+'" stroke-width="2.6" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="4.4" fill="'+(i===3?GREEN:'#FFFFFF')+'" stroke="'+GREEN+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])-11)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#2A2E33" font-family="Georgia,serif">'+p[0]+'%</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+19)+'" text-anchor="middle" font-size="10" fill="'+INK3+'">'+p[1]+'</text>';
+    });
+    document.getElementById('growth').innerHTML=s;
+    var gl=document.getElementById('gline'), len=gl.getTotalLength();
+    if (!STATIC){
+      gl.style.strokeDasharray=len; gl.style.strokeDashoffset=len;
+      setTimeout(function(){ gl.style.transition='stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)'; gl.style.strokeDashoffset='0'; },300);
+    }
+  })();
+
+  /* 合环大环 */
+  (function(){
+    var cx=105, cy=105, r=82, s='';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(40,50,60,.2)" stroke-width="1.4"/>';
+    for (var i=0;i<6;i++){
+      var a=-Math.PI/2+i*Math.PI/3;
+      var x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      var lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a);
+      s+='<circle class="fn" data-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7" fill="#E3E1D8" stroke="#FFFFFF" stroke-width="2"/>';
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#646C74">'+LOOP[i]+'</text>';
+    }
+    document.getElementById('bigring').innerHTML=s;
+  })();
+  function lightFinale(){
+    document.querySelectorAll('#bigring .fn').forEach(function(n,i){
+      setTimeout(function(){
+        n.setAttribute('fill', i===LIT ? GREEN : GOLD);
+        n.style.transition='fill .5s';
+      }, STATIC?0:i*260);
+    });
+  }
+
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if (e.target.querySelector && e.target.querySelector('#bigring')) lightFinale();
+      io.unobserve(e.target);
+    });
+  },{threshold:.18});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  if (STATIC){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+    lightFinale();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIW 审计问题写作辅助 · 金库</title>
+<style>
+  :root{
+    --vault:#161F2C; --vault2:#1E2A3A; --shelf:#243144; --shelf2:#2A3A52;
+    --ink:#E8EDF4; --ink2:#9AA9BD; --ink3:#66768C;
+    --brass:#D4A94E; --brass2:#B8892F;
+    --green:#00A758; --deep:#004B3A; --mist:#DDEDE7;
+    --coral:#C9715F;
+    --line:rgba(212,169,78,.22);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 500px at 82% -10%, rgba(212,169,78,.10), transparent 62%),
+      radial-gradient(900px 620px at -10% 46%, rgba(0,167,88,.07), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(212,169,78,.03) 0 1px, transparent 1px 34px),
+      linear-gradient(168deg,#18212F,#131B27 55%,#1A2433);
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif;}
+  .num{font-family:Georgia,"Times New Roman",serif;}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:14px 34px;background:rgba(22,31,44,.88);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .loopmark{width:34px;height:34px;flex:none;}
+  .topbar .name{font-size:15px;font-weight:700;}
+  .topbar .world{font-size:11px;color:var(--ink2);letter-spacing:.28em;margin-top:2px;}
+  .topbar .spacer{flex:1;}
+  .badge-test{font-size:10.5px;letter-spacing:.14em;color:var(--coral);
+    border:1px solid rgba(201,113,95,.45);border-radius:999px;padding:4px 12px;
+    background:rgba(201,113,95,.12);white-space:nowrap;}
+  .backlink{font-size:12.5px;color:var(--ink2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .25s;white-space:nowrap;}
+  .backlink:hover{color:var(--brass);border-color:var(--brass);}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:0 34px;}
+  .rule{display:flex;align-items:center;gap:18px;margin:84px 0 44px;}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(212,169,78,.65));}
+  .rule::after{background:linear-gradient(90deg,rgba(212,169,78,.65),transparent);}
+  .rule .rt{font-size:11px;letter-spacing:.42em;color:var(--brass);white-space:nowrap;font-weight:600;}
+
+  .card{background:linear-gradient(180deg,var(--shelf),#212E42);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 1px 2px rgba(0,0,0,.3),0 18px 40px -18px rgba(0,0,0,.6);}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .demo-static .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .demo-static *{animation:none!important;transition:none!important;}
+
+  /* 水印 */
+  .wm{position:relative;overflow:hidden;}
+  .wm::after{content:"内部测试 · 模拟数据";position:absolute;inset:0;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:42px;font-weight:800;letter-spacing:.3em;color:rgba(232,237,244,.045);
+    transform:rotate(-16deg);white-space:nowrap;}
+
+  .hero{padding:80px 0 8px;}
+  .hero .clock{font-size:15px;color:var(--ink2);letter-spacing:.1em;}
+  .hero h1{font-size:50px;line-height:1.2;font-weight:700;margin-top:14px;}
+  .hero h1 em{font-style:normal;color:var(--brass);}
+  .hero .sub{margin-top:18px;font-size:15.5px;line-height:1.9;color:var(--ink2);max-width:700px;}
+  .hero .sub b{color:var(--ink);font-weight:600;}
+  .pushgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:42px;}
+  .push{padding:24px;}
+  .push .ptag{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.2em;color:var(--brass);font-weight:700;}
+  .push .ptag .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(0,167,88,.16);}
+  .push h3{font-size:18px;margin:12px 0 8px;font-weight:700;}
+  .push p{font-size:13.5px;line-height:1.85;color:var(--ink2);}
+  .push .big{font-size:34px;margin-top:6px;color:var(--brass);}
+  .humangate{margin-top:18px;padding:18px 22px;border-radius:16px;
+    background:linear-gradient(135deg,#004B3A,#013326);color:#EAF4EF;
+    display:flex;align-items:center;gap:16px;box-shadow:0 18px 40px -18px rgba(0,60,45,.7);}
+  .humangate .icon{flex:none;width:40px;height:40px;border-radius:50%;
+    border:1.5px solid rgba(234,244,239,.5);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .humangate .t1{font-size:13px;font-weight:700;letter-spacing:.06em;}
+  .humangate .t2{font-size:12px;opacity:.82;margin-top:4px;line-height:1.7;}
+
+  /* 签名时刻：金库抽屉 */
+  .vaultcard{padding:30px;}
+  .vaultcard .vh{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .vaultcard h3{font-size:17px;font-weight:700;}
+  .vaultcard .vh span{font-size:12.5px;color:var(--ink2);}
+  .vaultcard .vh .vkey{margin-left:auto;font-size:11px;letter-spacing:.18em;color:var(--brass);
+    border:1px solid var(--line);border-radius:999px;padding:5px 14px;}
+  .draftgrid{display:grid;grid-template-columns:1fr 1.25fr;gap:22px;margin-top:20px;align-items:start;}
+  .sourcebox{background:#1B2536;border:1px dashed rgba(154,169,189,.35);border-radius:14px;padding:20px 22px;}
+  .sourcebox .stag{font-size:10.5px;letter-spacing:.22em;color:var(--ink3);font-weight:700;}
+  .sourcebox p{margin-top:10px;font-size:13.5px;line-height:2.0;color:var(--ink2);}
+  .sourcebox p mark{background:rgba(212,169,78,.18);color:var(--brass);padding:0 3px;border-radius:3px;}
+  .drawers{display:flex;flex-direction:column;gap:12px;}
+  .drawer{background:linear-gradient(90deg,#2A3A52,#243144);border:1px solid var(--line);border-radius:14px;
+    padding:16px 20px;position:relative;overflow:hidden;
+    opacity:0;transform:translateX(60px);transition:opacity .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1);}
+  .drawer.in{opacity:1;transform:none;}
+  .drawer::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brass);border-radius:4px 0 0 4px;}
+  .drawer .dt{display:flex;align-items:center;gap:10px;}
+  .drawer .dt .dk{width:26px;height:26px;border-radius:8px;background:rgba(212,169,78,.16);color:var(--brass);
+    font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .drawer .dt .dn{font-size:14px;font-weight:800;letter-spacing:.06em;}
+  .drawer .dt .dc{margin-left:auto;font-size:10.5px;color:var(--ink3);letter-spacing:.12em;}
+  .drawer .db{margin-top:8px;font-size:13px;line-height:1.9;color:var(--ink);}
+  .drawer .db b{color:var(--brass);font-weight:600;}
+  .sankeybox{margin-top:26px;background:#1B2536;border:1px solid var(--line);border-radius:14px;padding:20px 22px;}
+  .sankeybox .skt{font-size:12px;color:var(--ink2);letter-spacing:.08em;margin-bottom:6px;}
+  .sankeybox .skt b{color:var(--brass);}
+
+  /* 优化台：修改痕迹 */
+  .optcard{padding:28px;}
+  .optcard h3{font-size:16px;font-weight:800;}
+  .optcard .osub{font-size:12.5px;color:var(--ink2);margin-top:5px;}
+  .switches{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  .sw{font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer;user-select:none;
+    border:1px solid var(--line);background:#1B2536;color:var(--ink2);transition:all .3s;}
+  .sw.on{border-color:var(--brass);color:var(--brass);background:rgba(212,169,78,.1);}
+  .diffbox{margin-top:18px;background:#1B2536;border:1px solid var(--line);border-radius:14px;padding:22px 24px;}
+  .diffbox .dft{font-size:11px;letter-spacing:.2em;color:var(--ink3);font-weight:700;}
+  .diffbox .dline{margin-top:10px;font-size:14px;line-height:2.1;color:var(--ink);}
+  .diffbox del{color:var(--coral);text-decoration:line-through;text-decoration-color:rgba(201,113,95,.7);
+    background:rgba(201,113,95,.1);padding:0 3px;border-radius:3px;}
+  .diffbox ins{color:var(--brass);text-decoration:none;background:rgba(212,169,78,.14);
+    padding:1px 4px;border-radius:3px;font-weight:600;}
+  .casegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:20px;}
+  .case{background:#1B2536;border:1px solid var(--line);border-radius:13px;padding:16px 18px;cursor:pointer;transition:all .3s;}
+  .case:hover{border-color:var(--brass);transform:translateY(-2px);}
+  .case .cy{font-size:10.5px;letter-spacing:.16em;color:var(--brass);font-weight:700;}
+  .case h5{font-size:13.5px;margin:8px 0 6px;font-weight:700;line-height:1.5;}
+  .case p{font-size:11.5px;line-height:1.75;color:var(--ink2);}
+  .case .sim{margin-top:9px;font-size:10.5px;color:var(--ink3);}
+  .case .sim b{color:var(--green);}
+  .finalacts{margin-top:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .signbtn{font-size:15px;font-weight:800;border:none;border-radius:999px;padding:16px 34px;cursor:pointer;
+    font-family:inherit;color:#1A2230;background:linear-gradient(135deg,#E4BE63,#C89A3A);
+    box-shadow:0 0 0 5px rgba(212,169,78,.14),0 18px 36px -14px rgba(212,169,78,.5);transition:transform .3s;}
+  .signbtn:hover{transform:translateY(-2px);}
+  .finalnote{font-size:12px;color:var(--ink2);line-height:1.8;}
+
+  /* 合环 */
+  .assets{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;}
+  .acard{padding:24px;}
+  .acard h4{font-size:14.5px;font-weight:700;}
+  .acard .asub{font-size:12px;color:var(--ink2);margin-top:5px;line-height:1.7;}
+  .acard .asub b{color:var(--ink);}
+  .alist{margin-top:14px;display:flex;flex-direction:column;gap:11px;}
+  .aitem{display:flex;gap:10px;font-size:12.5px;line-height:1.75;color:var(--ink2);}
+  .aitem .tick{flex:none;width:18px;height:18px;border-radius:50%;background:rgba(212,169,78,.16);
+    color:var(--brass);font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;font-weight:700;}
+  .aitem b{color:var(--ink);font-weight:600;}
+
+  .finale{margin-top:88px;text-align:center;padding-bottom:28px;}
+  .finale .fring{width:205px;height:205px;margin:0 auto;}
+  .finale h2{font-size:29px;margin-top:32px;font-weight:700;}
+  .finale p{margin:13px auto 0;font-size:14px;line-height:2.0;color:var(--ink2);max-width:620px;}
+  .finale p b{color:var(--brass);}
+  .footer{padding:32px 0 44px;text-align:center;font-size:11.5px;color:var(--ink3);letter-spacing:.1em;line-height:2.1;}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);z-index:99;
+    background:linear-gradient(135deg,#E4BE63,#C89A3A);color:#1A2230;font-size:13px;font-weight:700;
+    padding:13px 26px;border-radius:999px;box-shadow:0 18px 40px -12px rgba(0,0,0,.6);
+    transition:transform .45s cubic-bezier(.2,.9,.3,1.2);}
+  .toast.show{transform:translate(-50%,0);}
+
+  @media (max-width:960px){
+    .pushgrid,.assets,.casegrid,.draftgrid{grid-template-columns:1fr;}
+    .hero h1{font-size:34px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶栏：本页点亮「资产」 -->
+<div class="topbar">
+  <svg class="loopmark" viewBox="0 0 34 34" id="topring"></svg>
+  <div>
+    <div class="name">AIW · 审计问题写作辅助</div>
+    <div class="world">金库 · 每一条都归档增值</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge-test">内部测试 · 模拟数据</span>
+  <a class="backlink" href="../index.html">← 返回总览</a>
+</div>
+
+<div class="wrap">
+
+  <!-- 第一幕：早晨 -->
+  <section class="hero reveal">
+    <div class="clock">周三 · 08:35 · 审计组</div>
+    <h1>早，瞿俊。<br>昨晚的底稿，<em>四要素已经成稿</em>。</h1>
+    <p class="sub">你睡前上传的 3 篇工作底稿，AI 连夜完成了要素拆解与主题归类。
+      金库里又多了 3 个候选条目——<b>但入库的印章，只在你手里</b>。</p>
+    <div class="pushgrid">
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>信号 · 主动推送</span>
+        <h3>新底稿已解析</h3>
+        <p>付款抽查、费用报销、IT 变更三篇，要素已抽取。</p>
+        <div class="big num">3 篇</div>
+      </div>
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>理解 · 上下文</span>
+        <h3>主题自动匹配</h3>
+        <p>"采购审批缺失"命中金库 7 条历史问题。</p>
+        <div class="big num">7 条</div>
+      </div>
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>任务 · 待你完成</span>
+        <h3>今日定稿目标</h3>
+        <p>平均每条 47 分钟，你的个人纪录。</p>
+        <div class="big num">2 条</div>
+      </div>
+    </div>
+    <div class="humangate">
+      <div class="icon">✋</div>
+      <div>
+        <div class="t1">人工闸门 · AI 起草，审计人定稿</div>
+        <div class="t2">事实是否充分、根因是否合理、风险是否夸大——这三个判断，AI 永远不替你签字。金库只收人定稿的条目。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">签名时刻 · 金库抽屉</span></div>
+
+  <!-- 第二幕：金库 -->
+  <section class="reveal">
+    <div class="card vaultcard wm">
+      <div class="vh">
+        <h3>底稿进，四要素出</h3>
+        <span>左侧原始底稿 · 右侧 AI 拆解的四个抽屉</span>
+        <span class="vkey">VAULT NO. 048</span>
+      </div>
+      <div class="draftgrid">
+        <div class="sourcebox">
+          <span class="stag">原始底稿 · 付款抽查</span>
+          <p>我们在抽查 <mark>5 笔付款</mark>时，发现 <mark>3 笔没有采购订单支持</mark>。财务说是因为<mark>系统故障</mark>临时走线下，但<mark>没看到任何审批记录</mark>。这可能导致重复付款或虚假供应商付款。</p>
+          <p style="margin-top:14px;font-size:12px;color:var(--ink3);">昨晚 23:12 上传 · AI 解析用时 41 秒</p>
+        </div>
+        <div class="drawers" id="drawers">
+          <div class="drawer">
+            <div class="dt"><span class="dk">问</span><span class="dn">问题</span><span class="dc">DRAWER 01</span></div>
+            <div class="db">3/5 抽查付款<b>缺乏采购订单支持</b>，且无替代审批记录。</div>
+          </div>
+          <div class="drawer">
+            <div class="dt"><span class="dk">险</span><span class="dn">风险</span><span class="dc">DRAWER 02</span></div>
+            <div class="db">可能导致<b>重复付款</b>或向<b>虚假供应商</b>付款，造成资金损失。</div>
+          </div>
+          <div class="drawer">
+            <div class="dt"><span class="dk">因</span><span class="dn">根因</span><span class="dc">DRAWER 03</span></div>
+            <div class="db">系统故障期间<b>未建立临时审批控制机制</b>，线下流程失控。</div>
+          </div>
+          <div class="drawer">
+            <div class="dt"><span class="dk">据</span><span class="dn">支持事实</span><span class="dc">DRAWER 04</span></div>
+            <div class="db">抽查 5 笔中 3 笔无 PO；财务称系统故障走线下；<b>未见任何审批证据</b>。</div>
+          </div>
+        </div>
+      </div>
+      <div class="sankeybox">
+        <div class="skt">金库索引 · <b>问题 → 根因 → 领域</b>，新条目自动归档到对的架子</div>
+        <svg id="sankey" viewBox="0 0 1060 240" style="width:100%;height:auto;display:block;"></svg>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">人的行动 · 定稿台</span></div>
+
+  <!-- 第三幕：定稿 -->
+  <section class="reveal">
+    <div class="card optcard wm">
+      <h3>修改痕迹留在明处，定稿印章在你手里</h3>
+      <div class="osub">勾选优化方向，AI 改写——<b style="color:var(--ink)">每一处改动都留痕</b>，你可以逐条接受或拒绝。</div>
+      <div class="switches" id="switches">
+        <span class="sw on" data-sw="0">✓ 强化风险业务影响</span>
+        <span class="sw on" data-sw="1">✓ 避免模糊措辞</span>
+        <span class="sw" data-sw="2">＋ 补充合规引用</span>
+      </div>
+      <div class="diffbox">
+        <span class="dft">风险表述 · 优化对比（留痕模式）</span>
+        <div class="dline" id="difftext">在缺乏采购订单及审批记录的情况下，付款缺乏必要业务依据，存在向<del>虚假供应商付款</del><ins>未授权供应商付款</ins>或<del>重复付款</del><ins>重复支付</ins>的风险，可能造成公司<del>资金损失</del><ins>资金损失及合规违规</ins>。</div>
+      </div>
+      <div class="casegrid">
+        <div class="case" data-c="0">
+          <span class="cy">2023 · 供应链</span>
+          <h5>审批权限未设置，超预算采购频发</h5>
+          <p>3 个部门共用同一审批账号，权限矩阵缺失。</p>
+          <div class="sim">语义相似度 <b>91%</b> · 内部模拟案例</div>
+        </div>
+        <div class="case" data-c="1">
+          <span class="cy">2022 · 财务</span>
+          <h5>紧急采购无事后复核，舞弊窗口敞开</h5>
+          <p>紧急通道平均补齐审批耗时 23 天，4 笔始终未补。</p>
+          <div class="sim">语义相似度 <b>87%</b> · 内部模拟案例</div>
+        </div>
+        <div class="case" data-c="2">
+          <span class="cy">2021 · IT</span>
+          <h5>系统停机期间无降级流程预案</h5>
+          <p>故障 6 小时内业务全面转线下，无任何控制接棒。</p>
+          <div class="sim">语义相似度 <b>82%</b> · 内部模拟案例</div>
+        </div>
+      </div>
+      <div class="finalacts">
+        <button class="signbtn" id="signbtn">✍ 我确认事实与判断 · 定稿入库</button>
+        <div class="finalnote">定稿后：条目入金库第 048 架 · 修改痕迹全程留档 · 你的定稿偏好回流为下次起草的基线。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">合环 · 复盘 / 资产 / 回流</span></div>
+
+  <!-- 第四幕：合环 -->
+  <section class="reveal">
+    <div class="assets">
+      <div class="card acard">
+        <h4>复盘 · 每一次定稿都留痕</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">✓</span><span><b>第 46 条</b> · 你拒绝 AI 夸大的风险表述，改回"可能造成"</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>第 47 条</b> · 你要求重析根因，AI 二次拆解后命中</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>第 48 条</b> · 3 处修改痕迹存档，定稿人：瞿俊</span></div>
+        </div>
+      </div>
+      <div class="card acard">
+        <h4>资产 · 人越来越快：单条定稿耗时</h4>
+        <div class="asub">不是 AI 变快了，是<b>你</b>越来越会判断——金库记得每一次拒绝与采纳。</div>
+        <svg id="growth" viewBox="0 0 340 180" style="width:100%;height:auto;display:block;margin-top:8px;"></svg>
+      </div>
+      <div class="card acard">
+        <h4>回流 · 金库越用越厚</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">↺</span><span>你的 3 处拒绝 → 回流为<b>起草基线</b>，下次不再夸大风险</span></div>
+          <div class="aitem"><span class="tick">↺</span><span>第 048 架新增 → "采购审批"主题达 8 条，<b>自动聚类成专题</b></span></div>
+          <div class="aitem"><span class="tick">↺</span><span>相似案例点击记录 → 优化<b>案例排序模型</b></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finale reveal">
+      <svg class="fring" viewBox="0 0 210 210" id="bigring"></svg>
+      <h2 class="serif">金库的灯光，为下一条而亮</h2>
+      <p>明早 08:35，新底稿会准时出现在架上。<br>
+        AI 负责把架子搭好，<b>瞿俊负责决定哪一条值得入库</b>。</p>
+    </div>
+
+    <div class="footer">中宏保险 · Loop 升级打样 · 学员案例「AIW 审计问题写作辅助」<br>金库 · 本页签名节点：资产</div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var HASH = location.hash || '';
+  var STATIC = HASH.indexOf('demo') >= 0;
+  if (STATIC) document.documentElement.classList.add('demo-static');
+  var LOOP=['信号','理解','行动','复盘','资产','回流'];
+  var LIT=4;
+  var GREEN='#00A758', GOLD='#D4A94E', INK3='#66768C', INK2='#9AA9BD';
+
+  /* 顶栏小环 */
+  (function(){
+    var s='', cx=17, cy=17, r=12;
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2+j*Math.PI/3;
+      var x=(cx+r*Math.cos(a)).toFixed(1), y=(cy+r*Math.sin(a)).toFixed(1);
+      s+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===LIT?3.6:2.2)+'" fill="'+(j===LIT?GREEN:'#4A5A70')+'"/>';
+    }
+    s+='<circle cx="17" cy="17" r="16.2" fill="none" stroke="'+GOLD+'" stroke-width="0.8" opacity="0.7"/>';
+    document.getElementById('topring').innerHTML=s;
+  })();
+
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  /* 抽屉滑入（ stagger ） */
+  function openDrawers(){
+    document.querySelectorAll('#drawers .drawer').forEach(function(d,i){
+      setTimeout(function(){ d.classList.add('in'); }, STATIC?0:i*220);
+    });
+  }
+
+  /* ===== 桑基：问题 → 根因 → 领域 ===== */
+  (function(){
+    var L=[{t:'无 PO 付款',y:120,h:56}];
+    var M=[{t:'无临时审批机制',y:74,h:44},{t:'权限与复核缺失',y:172,h:44}];
+    var R=[{t:'采购',y:46,h:34},{t:'财务',y:118,h:34},{t:'IT',y:190,h:34}];
+    var X0=70, X1=480, X2=880;
+    var s='';
+    function band(x1,y1,x2,y2,h,op){
+      return '<path d="M'+x1+','+(y1-h/2)+' C'+((x1+x2)/2)+','+(y1-h/2)+' '+((x1+x2)/2)+','+(y2-h/2)+' '+x2+','+(y2-h/2)
+        +' L'+x2+','+(y2+h/2)+' C'+((x1+x2)/2)+','+(y2+h/2)+' '+((x1+x2)/2)+','+(y1+h/2)+' '+x1+','+(y1+h/2)+' Z"'
+        +' fill="rgba(212,169,78,'+op+')"/>';
+    }
+    s+=band(X0+150, 106, X1, 74, 30, .34);
+    s+=band(X0+150, 134, X1, 172, 26, .22);
+    s+=band(X1+190, 74, X2, 46, 18, .34);
+    s+=band(X1+190, 84, X2, 118, 16, .26);
+    s+=band(X1+190, 172, X2, 190, 18, .3);
+    s+=band(X1+190, 162, X2, 118, 14, .2);
+    function node(x,n,hot){
+      return '<rect x="'+x+'" y="'+(n.y-n.h/2)+'" width="'+(x===X1?190:150)+'" height="'+n.h+'" rx="9"'
+        +' fill="'+(hot?'rgba(212,169,78,.16)':'#243144')+'" stroke="'+(hot?GOLD:'rgba(212,169,78,.35)')+'" stroke-width="'+(hot?1.6:1)+'"/>'
+        +'<text x="'+(x+(x===X1?95:75))+'" y="'+(n.y+4.5)+'" text-anchor="middle" font-size="12.5" font-weight="'+(hot?800:600)+'" fill="'+(hot?GOLD:'#E8EDF4')+'">'+n.t+'</text>';
+    }
+    s+=node(X0,L[0],true);
+    M.forEach(function(n){ s+=node(X1,n,false); });
+    R.forEach(function(n){ s+=node(X2,n,false); });
+    s+='<text x="'+(X0+75)+'" y="34" text-anchor="middle" font-size="10.5" letter-spacing="2" fill="'+INK3+'">问题</text>';
+    s+='<text x="'+(X1+95)+'" y="34" text-anchor="middle" font-size="10.5" letter-spacing="2" fill="'+INK3+'">根因</text>';
+    s+='<text x="'+(X2+75)+'" y="34" text-anchor="middle" font-size="10.5" letter-spacing="2" fill="'+INK3+'">领域</text>';
+    document.getElementById('sankey').innerHTML=s;
+  })();
+
+  /* 优化开关 */
+  document.querySelectorAll('#switches .sw').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      this.classList.toggle('on');
+      var on=this.classList.contains('on');
+      this.textContent=(on?'✓ ':'＋ ')+this.textContent.replace(/^[✓＋]\s*/,'');
+      toast(on?'优化方向已加入 · 改写留痕':'已移除该优化方向');
+    });
+  });
+
+  /* 案例点击 */
+  document.querySelectorAll('.case').forEach(function(c){
+    c.addEventListener('click', function(){
+      toast('已展开历史案例 · 内部模拟数据，仅供写作参考');
+    });
+  });
+
+  /* 定稿 */
+  document.getElementById('signbtn').addEventListener('click', function(){
+    this.textContent='✓ 已定稿入库 · 第 048 架';
+    this.disabled=true;
+    this.style.opacity=.75;
+    toast('VAULT NO.048 已封存 · 修改痕迹存档 · 偏好已回流');
+  });
+
+  /* ===== 省力曲线：95 → 47 分钟 ===== */
+  (function(){
+    var pts=[[95,'第 1 条'],[78,'第 15 条'],[62,'第 30 条'],[47,'第 50 条']];
+    var X0=42,X1=312,Y0=152,Y1=34;
+    function px(i){ return X0+(X1-X0)*i/3; }
+    function py(v){ return Y0-(Y0-Y1)*(100-v)/(100-40); }
+    var d=''; pts.forEach(function(p,i){ d+=(i?' L':'M')+px(i)+','+py(p[0]).toFixed(1); });
+    var s='<path d="'+d+' L'+px(3)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(212,169,78,.1)"/>';
+    s+='<path id="gline" d="'+d+'" fill="none" stroke="'+GOLD+'" stroke-width="2.6" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="4.4" fill="'+(i===3?GOLD:'#243144')+'" stroke="'+GOLD+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])-11)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#E8EDF4" font-family="Georgia,serif">'+p[0]+' 分</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+19)+'" text-anchor="middle" font-size="10" fill="'+INK3+'">'+p[1]+'</text>';
+    });
+    document.getElementById('growth').innerHTML=s;
+    var gl=document.getElementById('gline'), len=gl.getTotalLength();
+    if (!STATIC){
+      gl.style.strokeDasharray=len; gl.style.strokeDashoffset=len;
+      setTimeout(function(){ gl.style.transition='stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)'; gl.style.strokeDashoffset='0'; },300);
+    }
+  })();
+
+  /* 合环大环 */
+  (function(){
+    var cx=105, cy=105, r=82, s='';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(212,169,78,.28)" stroke-width="1.4"/>';
+    for (var i=0;i<6;i++){
+      var a=-Math.PI/2+i*Math.PI/3;
+      var x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      var lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a);
+      s+='<circle class="fn" data-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7" fill="#3A4A62" stroke="#161F2C" stroke-width="2"/>';
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#9AA9BD">'+LOOP[i]+'</text>';
+    }
+    document.getElementById('bigring').innerHTML=s;
+  })();
+  function lightFinale(){
+    document.querySelectorAll('#bigring .fn').forEach(function(n,i){
+      setTimeout(function(){
+        n.setAttribute('fill', i===LIT ? GREEN : GOLD);
+        n.style.transition='fill .5s';
+      }, STATIC?0:i*260);
+    });
+  }
+
+  /* 出现动画 */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if (e.target.querySelector && e.target.querySelector('#drawers')) openDrawers();
+      if (e.target.querySelector && e.target.querySelector('#bigring')) lightFinale();
+      io.unobserve(e.target);
+    });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  if (STATIC){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+    openDrawers();
+    lightFinale();
+  }
+})();
+</script>
+</body>
+</html>

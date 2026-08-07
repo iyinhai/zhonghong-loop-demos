@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目周报 AI 助手 · 多周河流</title>
+<style>
+  :root{
+    --water:#F2F8F7; --paper:#FDFEFE; --paper2:#EBF4F2;
+    --ink:#1F3230; --ink2:#58706C; --ink3:#8AA29C;
+    --green:#00A758; --deep:#004B3A; --mist:#DDEDE7;
+    --teal:#0E8C7F; --gold:#C89A3A; --coral:#B65F50; --coralbg:#F9ECE7;
+    --line:rgba(15,70,60,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1000px 460px at 85% -8%, rgba(14,140,127,.09), transparent 60%),
+      radial-gradient(820px 520px at -8% 44%, rgba(200,154,58,.06), transparent 60%),
+      repeating-linear-gradient(105deg, rgba(14,140,127,.028) 0 2px, transparent 2px 30px),
+      linear-gradient(168deg,#F4FAF9,#E7F2F0 55%,#F0F8F6);
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif;}
+  .num{font-family:Georgia,"Times New Roman",serif;}
+  .mono{font-family:"SF Mono",Menlo,monospace;}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:14px 34px;background:rgba(244,250,249,.87);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .loopmark{width:34px;height:34px;flex:none;}
+  .topbar .name{font-size:15px;font-weight:700;}
+  .topbar .world{font-size:11px;color:var(--ink2);letter-spacing:.28em;margin-top:2px;}
+  .topbar .spacer{flex:1;}
+  .badge-test{font-size:10.5px;letter-spacing:.14em;color:var(--coral);
+    border:1px solid rgba(182,95,80,.4);border-radius:999px;padding:4px 12px;
+    background:rgba(249,236,231,.7);white-space:nowrap;}
+  .backlink{font-size:12.5px;color:var(--ink2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .25s;white-space:nowrap;}
+  .backlink:hover{color:var(--deep);border-color:var(--deep);}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:0 34px;}
+  .rule{display:flex;align-items:center;gap:18px;margin:84px 0 44px;}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(200,154,58,.6));}
+  .rule::after{background:linear-gradient(90deg,rgba(200,154,58,.6),transparent);}
+  .rule .rt{font-size:11px;letter-spacing:.42em;color:var(--gold);white-space:nowrap;font-weight:600;}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 1px 2px rgba(15,60,55,.05),0 14px 34px -18px rgba(15,60,55,.22);}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .demo-static .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .demo-static *{animation:none!important;}
+
+  .hero{padding:80px 0 8px;}
+  .hero .clock{font-size:15px;color:var(--ink2);letter-spacing:.1em;}
+  .hero h1{font-size:50px;line-height:1.2;font-weight:700;margin-top:14px;}
+  .hero h1 em{font-style:normal;color:var(--teal);}
+  .hero .sub{margin-top:18px;font-size:15.5px;line-height:1.9;color:var(--ink2);max-width:680px;}
+  .hero .sub b{color:var(--ink);font-weight:600;}
+  .pushgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:42px;}
+  .push{padding:24px;}
+  .push .ptag{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.2em;color:var(--deep);font-weight:700;}
+  .push .ptag .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(0,167,88,.14);}
+  .push h3{font-size:18px;margin:12px 0 8px;font-weight:700;}
+  .push p{font-size:13.5px;line-height:1.85;color:var(--ink2);}
+  .push .big{font-size:34px;margin-top:6px;color:var(--teal);}
+  .humangate{margin-top:18px;padding:18px 22px;border-radius:16px;
+    background:linear-gradient(135deg,#004B3A,#013326);color:#EAF4EF;
+    display:flex;align-items:center;gap:16px;box-shadow:0 18px 40px -18px rgba(0,75,58,.55);}
+  .humangate .icon{flex:none;width:40px;height:40px;border-radius:50%;
+    border:1.5px solid rgba(234,244,239,.5);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .humangate .t1{font-size:13px;font-weight:700;letter-spacing:.06em;}
+  .humangate .t2{font-size:12px;opacity:.82;margin-top:4px;line-height:1.7;}
+
+  /* 河流 */
+  .rivercard{padding:30px;}
+  .rivercard .rh{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .rivercard h3{font-size:17px;font-weight:700;}
+  .rivercard .rh span{font-size:12.5px;color:var(--ink2);}
+  .weekpills{margin-left:auto;display:flex;gap:7px;}
+  .wpill{font-size:12px;font-weight:700;padding:7px 15px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper2);color:var(--ink2);font-family:inherit;transition:all .3s;}
+  .wpill.on{background:var(--teal);color:#F2FAF8;border-color:var(--teal);}
+  .wpill:hover:not(.on){border-color:var(--teal);color:var(--teal);}
+  .riverlegend{display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--ink2);}
+  .riverlegend i{display:inline-block;width:20px;height:10px;border-radius:5px;margin-right:6px;vertical-align:-1px;}
+  .weekquote{margin-top:18px;padding:18px 22px;border-radius:14px;background:var(--paper2);
+    border-left:3px solid var(--teal);font-size:15px;line-height:1.85;color:var(--ink);}
+  .weekquote b{color:var(--teal);}
+  .weekquote .wq-tag{font-size:10.5px;letter-spacing:.2em;color:var(--ink3);font-weight:700;display:block;margin-bottom:6px;}
+
+  /* 校准台 */
+  .calcard{padding:28px;}
+  .calcard h3{font-size:16px;font-weight:800;}
+  .calcard .csub{font-size:12.5px;color:var(--ink2);margin-top:5px;}
+  .calrows{margin-top:18px;display:flex;flex-direction:column;gap:14px;}
+  .calrow{background:var(--paper2);border:1px solid var(--line);border-radius:15px;padding:16px 20px;transition:all .3s;}
+  .calrow.lag{border-color:rgba(182,95,80,.5);background:var(--coralbg);}
+  .calrow .cr-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .calrow .cr-name{font-size:14px;font-weight:800;width:110px;}
+  .calrow .cr-theo{font-size:12px;color:var(--ink2);}
+  .calrow .cr-theo b{color:var(--teal);font-family:Georgia,serif;font-size:15px;}
+  .calrow .cr-dev{margin-left:auto;font-size:11.5px;font-weight:800;border-radius:8px;padding:4px 11px;}
+  .calrow.ok .cr-dev{background:var(--mist);color:var(--deep);}
+  .calrow.lag .cr-dev{background:#F3D9CF;color:var(--coral);}
+  .calrow .sliderow{display:flex;align-items:center;gap:14px;margin-top:12px;}
+  .calrow input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;
+    background:linear-gradient(90deg,var(--teal) var(--fill,50%),#D7E4E0 var(--fill,50%));outline:none;}
+  .calrow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;border:2.5px solid var(--teal);cursor:pointer;box-shadow:0 3px 8px rgba(14,140,127,.35);}
+  .calrow .cr-act{font-size:13px;font-weight:800;color:var(--ink);width:86px;text-align:right;font-family:Georgia,serif;}
+  .calrow .cr-act small{font-size:10px;color:var(--ink3);font-weight:400;display:block;font-family:inherit;}
+  .calrow .risk{margin-top:10px;font-size:12px;line-height:1.75;color:var(--coral);display:none;}
+  .calrow.lag .risk{display:block;}
+  .calrow .risk b{font-weight:700;}
+  .calactions{margin-top:20px;display:flex;align-items:center;gap:16px;}
+  .savebtn{font-size:15px;font-weight:800;border:none;border-radius:999px;padding:16px 34px;cursor:pointer;
+    font-family:inherit;color:#F4FBF7;background:linear-gradient(135deg,#0E8C7F,#0A6B61);
+    box-shadow:0 0 0 5px rgba(14,140,127,.14),0 18px 36px -14px rgba(14,140,127,.55);transition:transform .3s;}
+  .savebtn:hover{transform:translateY(-2px);}
+  .calnote{font-size:12px;color:var(--ink2);line-height:1.8;}
+
+  /* 合环 */
+  .assets{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;}
+  .acard{padding:24px;}
+  .acard h4{font-size:14.5px;font-weight:700;}
+  .alist{margin-top:14px;display:flex;flex-direction:column;gap:11px;}
+  .aitem{display:flex;gap:10px;font-size:12.5px;line-height:1.75;color:var(--ink2);}
+  .aitem .tick{flex:none;width:18px;height:18px;border-radius:50%;background:var(--mist);
+    color:var(--deep);font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;font-weight:700;}
+  .aitem b{color:var(--ink);font-weight:600;}
+
+  .finale{margin-top:88px;text-align:center;padding-bottom:28px;}
+  .finale .fring{width:205px;height:205px;margin:0 auto;}
+  .finale h2{font-size:29px;margin-top:32px;font-weight:700;}
+  .finale p{margin:13px auto 0;font-size:14px;line-height:2.0;color:var(--ink2);max-width:600px;}
+  .finale p b{color:var(--teal);}
+  .footer{padding:32px 0 44px;text-align:center;font-size:11.5px;color:var(--ink3);letter-spacing:.1em;line-height:2.1;}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);z-index:99;
+    background:var(--deep);color:#EAF4EF;font-size:13px;font-weight:600;
+    padding:13px 26px;border-radius:999px;box-shadow:0 18px 40px -12px rgba(0,40,30,.5);
+    transition:transform .45s cubic-bezier(.2,.9,.3,1.2);}
+  .toast.show{transform:translate(-50%,0);}
+
+  @media (max-width:960px){
+    .pushgrid,.assets{grid-template-columns:1fr;}
+    .hero h1{font-size:34px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶栏：本页点亮「复盘」 -->
+<div class="topbar">
+  <svg class="loopmark" viewBox="0 0 34 34" id="topring"></svg>
+  <div>
+    <div class="name">项目周报 AI 助手</div>
+    <div class="world">多周河流 · 连续剧</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge-test">内部测试 · 模拟数据</span>
+  <a class="backlink" href="../index.html">← 返回总览</a>
+</div>
+
+<div class="wrap">
+
+  <!-- 第一幕：周五早晨 -->
+  <section class="hero reveal">
+    <div class="clock">周五 · 08:40 · 项目部</div>
+    <h1>早，庆虎。<br>本周周报，<em>AI 已经起了个头</em>。</h1>
+    <p class="sub">昨晚 22:00，系统读完了项目甘特图与上周承诺，理论进度已经算好。
+      你不需要从零写周报——<b>你只需要把"纸面进度"校准成"真实进度"</b>，剩下的交给河流自己续写。</p>
+    <div class="pushgrid">
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>信号 · 主动推送</span>
+        <h3>甘特图已解析</h3>
+        <p>3 个在研任务、4 周历史进度，昨晚已自动抓取。</p>
+        <div class="big num">3 任务</div>
+      </div>
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>理解 · 上下文</span>
+        <h3>理论进度已算 + 承诺记得</h3>
+        <p>W24 你承诺"原型拆分并行"，本周已自动对照。</p>
+        <div class="big num">4 周</div>
+      </div>
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>任务 · 待你完成</span>
+        <h3>周五 17:00 前提交</h3>
+        <p>只需校准 3 个数字，预计 6 分钟。</p>
+        <div class="big num">6 分钟</div>
+      </div>
+    </div>
+    <div class="humangate">
+      <div class="icon">✋</div>
+      <div>
+        <div class="t1">人工闸门 · 理论进度 AI 算，实际进度人定</div>
+        <div class="t2">AI 不会替你填"实际进度"——它只把偏差摆在你面前。每一次校准，都是对项目的一次诚实。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">签名时刻 · 多周河流</span></div>
+
+  <!-- 第二幕：河流 -->
+  <section class="reveal">
+    <div class="card rivercard">
+      <div class="rh">
+        <h3>四周河流 · 连续三周不再从空白开始</h3>
+        <span>每条河是一个任务，宽度偏差越大颜色越警</span>
+        <div class="weekpills" id="weekpills">
+          <button class="wpill" data-w="0">W22</button>
+          <button class="wpill" data-w="1">W23</button>
+          <button class="wpill" data-w="2">W24</button>
+          <button class="wpill on" data-w="3">W25</button>
+        </div>
+      </div>
+      <div class="riverlegend">
+        <span><i style="background:#0E8C7F"></i>受控 · 偏差 &lt; 10pt</span>
+        <span><i style="background:#C89A3A"></i>收窄 · 10–15pt</span>
+        <span><i style="background:#B65F50"></i>滞后 · ≥ 15pt</span>
+      </div>
+      <svg id="river" viewBox="0 0 1060 270" style="width:100%;height:auto;display:block;margin-top:14px;"></svg>
+      <div class="weekquote" id="weekquote">
+        <span class="wq-tag" id="wqtag">W25 · 本周</span>
+        <span id="wqtext">「接口开发首次出现偏差信号——理论 45% vs 实际 41%，<b>提前 6 天预警</b>。」</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">人的行动 · 校准台</span></div>
+
+  <!-- 第三幕：校准 -->
+  <section class="reveal">
+    <div class="card calcard">
+      <h3>把纸面进度，校准成真实进度</h3>
+      <div class="csub">拖动滑块填入实际进度。偏差 ≥ 15pt 的任务会立刻变红，AI 同步给出风险建议——<b>但填多少，永远你说了算</b>。</div>
+      <div class="calrows" id="calrows">
+        <div class="calrow ok" data-theo="80" data-name="需求调研">
+          <div class="cr-top">
+            <span class="cr-name">需求调研</span>
+            <span class="cr-theo">理论 <b>80%</b></span>
+            <span class="cr-dev">偏差 8pt · 受控</span>
+          </div>
+          <div class="sliderow">
+            <input type="range" min="0" max="100" value="72" data-i="0">
+            <span class="cr-act"><span class="v">72%</span><small>实际进度</small></span>
+          </div>
+          <div class="risk">⚠ 偏差已达 <b class="devnum">20pt</b>。建议：本周锁定需求边界，变更统一走评审——该建议已连续两周命中，采纳率将计入预测模型。</div>
+        </div>
+        <div class="calrow ok" data-theo="50" data-name="原型设计">
+          <div class="cr-top">
+            <span class="cr-name">原型设计</span>
+            <span class="cr-theo">理论 <b>50%</b></span>
+            <span class="cr-dev">偏差 6pt · 受控</span>
+          </div>
+          <div class="sliderow">
+            <input type="range" min="0" max="100" value="44" data-i="1">
+            <span class="cr-act"><span class="v">44%</span><small>实际进度</small></span>
+          </div>
+          <div class="risk">⚠ 偏差已达 <b class="devnum">20pt</b>。建议：拆分为"核心流程 / 边缘页面"两条线并行，上周你采纳过此策略，滞后从 20pt 收窄到 6pt。</div>
+        </div>
+        <div class="calrow ok" data-theo="20" data-name="接口开发">
+          <div class="cr-top">
+            <span class="cr-name">接口开发</span>
+            <span class="cr-theo">理论 <b>20%</b></span>
+            <span class="cr-dev">偏差 4pt · 受控</span>
+          </div>
+          <div class="sliderow">
+            <input type="range" min="0" max="100" value="16" data-i="2">
+            <span class="cr-act"><span class="v">16%</span><small>实际进度</small></span>
+          </div>
+          <div class="risk">⚠ 偏差已达 <b class="devnum">15pt</b>。建议：提前与下游确认字段口径——河流显示该任务上周已有收窄迹象，宜早不宜迟。</div>
+        </div>
+      </div>
+      <div class="calactions">
+        <button class="savebtn" id="savebtn">✍ 我确认：这就是本周真实进度</button>
+        <div class="calnote">提交后：周报正文自动生成 · 偏差与理由留痕到人 · 校准结果回流进下周理论模型。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">合环 · 复盘 / 资产 / 回流</span></div>
+
+  <!-- 第四幕：合环 -->
+  <section class="reveal">
+    <div class="assets">
+      <div class="card acard">
+        <h4>复盘 · 每一次校准都留痕</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">✓</span><span><b>W23 09:12</b> · 庆虎将需求调研校准 80→60，理由"客户变更 4 次"</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>W24 08:55</b> · 采纳"拆分并行"建议，原型滞后 20pt→6pt</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>W25 08:47</b> · 接口开发提前 6 天预警，已通知下游</span></div>
+        </div>
+      </div>
+      <div class="card acard">
+        <h4>资产 · 人的判断力在涨：预测准确率</h4>
+        <div style="font-size:12px;color:var(--ink2);margin-top:5px;">你的校准越准，下周理论模型越聪明——这是<b style="color:var(--ink)">你</b>的成长曲线。</div>
+        <svg id="growth" viewBox="0 0 340 180" style="width:100%;height:auto;display:block;margin-top:8px;"></svg>
+      </div>
+      <div class="card acard">
+        <h4>回流 · 上周的建议，本周见效果</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">↺</span><span>W24 建议"原型拆分并行" → 本周该任务<b>首次回到受控</b></span></div>
+          <div class="aitem"><span class="tick">↺</span><span>你的 3 次校准理由 → 已回流为理论模型的<b>修正因子</b></span></div>
+          <div class="aitem"><span class="tick">↺</span><span>河流连续 4 周数据 → 自动生成<b>月度项目健康报告</b>初稿</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finale reveal">
+      <svg class="fring" viewBox="0 0 210 210" id="bigring"></svg>
+      <h2 class="serif">河流继续向前流</h2>
+      <p>下周一 08:40，W26 的河段会带着本周的校准结果准时出现。<br>
+        AI 负责记住河流的形状，<b>庆虎负责让河流流向对的地方</b>。</p>
+    </div>
+
+    <div class="footer">中宏保险 · Loop 升级打样 · 学员案例「项目周报 AI 助手」<br>多周河流 · 本页签名节点：复盘</div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var HASH = location.hash || '';
+  var STATIC = HASH.indexOf('demo') >= 0;
+  if (STATIC) document.documentElement.classList.add('demo-static');
+  var LOOP=['信号','理解','行动','复盘','资产','回流'];
+  var LIT=3;
+  var GREEN='#00A758', DEEP='#004B3A', GOLD='#C89A3A', CORAL='#B65F50', TEAL='#0E8C7F', INK3='#8AA29C';
+
+  /* 顶栏小环 */
+  (function(){
+    var s='', cx=17, cy=17, r=12;
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2+j*Math.PI/3;
+      var x=(cx+r*Math.cos(a)).toFixed(1), y=(cy+r*Math.sin(a)).toFixed(1);
+      s+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===LIT?3.6:2.2)+'" fill="'+(j===LIT?GREEN:'#A9C4BC')+'"/>';
+    }
+    s+='<circle cx="17" cy="17" r="16.2" fill="none" stroke="'+GOLD+'" stroke-width="0.8" opacity="0.65"/>';
+    document.getElementById('topring').innerHTML=s;
+  })();
+
+  /* toast */
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  /* ===== 多周河流 ===== */
+  var TASKS=[
+    {name:'需求调研', segs:[{d:20,s:'lag'},{d:8,s:'narrow'},{d:0,s:'ok'},{d:0,s:'ok'}]},
+    {name:'原型设计', segs:[{d:20,s:'lag'},{d:15,s:'lag'},{d:6,s:'narrow'},{d:0,s:'ok'}]},
+    {name:'接口开发', segs:[{d:0,s:'ok'},{d:0,s:'ok'},{d:12,s:'narrow'},{d:4,s:'ok'}]}
+  ];
+  var COLORS={ok:TEAL, narrow:GOLD, lag:CORAL};
+  var LABEL={ok:'受控', narrow:'收窄', lag:'滞后'};
+  var QUOTES=[
+    {tag:'W22 · 河流源头', text:'「这是河流的源头：第一次，周报<b>不再从空白文档开始</b>。」'},
+    {tag:'W23 · 承诺兑现', text:'「上周你承诺锁定需求边界——本周变更减少 3 次，滞后从 20pt <b>收窄到 8pt</b>。」'},
+    {tag:'W24 · 建议预置', text:'「原型设计连续两周滞后——建议<b>拆分模块并行推进</b>，已预置进本周计划。」'},
+    {tag:'W25 · 本周', text:'「接口开发连续两周收窄（12pt → 4pt）——趋势向好，建议<b>提前与下游确认字段口径</b>。」'}
+  ];
+  var curWeek=3;
+
+  (function buildRiver(){
+    var X0=118, COLW=228, GAP=10, ROWY=[78,152,226], H=30;
+    var s='';
+    /* 周列头 */
+    for (var w=0;w<4;w++){
+      var cxm=X0+COLW*w+COLW/2;
+      s+='<text x="'+cxm+'" y="26" text-anchor="middle" font-size="12" font-weight="'+(w===3?800:600)+'" fill="'+(w===3?TEAL:INK3)+'">W'+(22+w)+(w===3?' · 本周':'')+'</text>';
+      if (w>0) s+='<line x1="'+(X0+COLW*w-GAP/2)+'" y1="38" x2="'+(X0+COLW*w-GAP/2)+'" y2="248" stroke="rgba(15,70,60,.1)" stroke-width="1" stroke-dasharray="3 5"/>';
+    }
+    /* 任务行 */
+    TASKS.forEach(function(t,ri){
+      var y=ROWY[ri];
+      s+='<text x="6" y="'+(y+5)+'" font-size="14" font-weight="800" fill="#1F3230">'+t.name+'</text>';
+      t.segs.forEach(function(sg,w){
+        var x=X0+COLW*w;
+        var wSeg=COLW-GAP;
+        var delay=(ri*4+w)*0.09;
+        s+='<rect class="rseg" data-w="'+w+'" x="'+x+'" y="'+(y-H/2)+'" width="'+wSeg+'" height="'+H+'" rx="'+(H/2)+'" fill="'+COLORS[sg.s]+'" opacity="0.9">'
+          +(STATIC?'':'<animate attributeName="width" from="0" to="'+wSeg+'" dur="0.7s" begin="'+delay.toFixed(2)+'s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1" keyTimes="0;1" values="0;'+wSeg+'"/>')
+          +'</rect>';
+        var lab = sg.s==='ok' ? (sg.d>0?'收窄 '+sg.d+'pt':'受控') : LABEL[sg.s]+' '+sg.d+'pt';
+        s+='<text class="rseg-lab" data-w="'+w+'" x="'+(x+wSeg/2)+'" y="'+(y+4.5)+'" text-anchor="middle" font-size="11.5" font-weight="700" fill="#FDFEFE">'+lab+'</text>';
+      });
+    });
+    /* 流向箭头 */
+    s+='<path d="M1010,20 L1040,20 M1032,13 L1041,20 L1032,27" stroke="'+GOLD+'" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    document.getElementById('river').innerHTML=s;
+  })();
+
+  function highlightWeek(w){
+    curWeek=w;
+    document.querySelectorAll('#weekpills .wpill').forEach(function(p){
+      p.classList.toggle('on', +p.dataset.w===w);
+    });
+    document.querySelectorAll('#river .rseg').forEach(function(r){
+      var mine=+r.dataset.w===w;
+      r.setAttribute('opacity', mine?'1':'0.38');
+      r.setAttribute('stroke', mine?'#1F3230':'none');
+      r.setAttribute('stroke-width', mine?'1.6':'0');
+    });
+    document.querySelectorAll('#river .rseg-lab').forEach(function(t){
+      t.setAttribute('opacity', +t.dataset.w===w?'1':'0.4');
+    });
+    document.getElementById('wqtag').textContent=QUOTES[w].tag;
+    document.getElementById('wqtext').innerHTML=QUOTES[w].text;
+  }
+  document.querySelectorAll('#weekpills .wpill').forEach(function(p){
+    p.addEventListener('click', function(){ highlightWeek(+p.dataset.w); });
+  });
+  highlightWeek(3);
+
+  /* ===== 校准台 ===== */
+  document.querySelectorAll('.calrow').forEach(function(row){
+    var theo=+row.dataset.theo;
+    var range=row.querySelector('input[type=range]');
+    var vEl=row.querySelector('.v');
+    var devEl=row.querySelector('.cr-dev');
+    var devNum=row.querySelector('.devnum');
+    function paint(){
+      var v=+range.value;
+      range.style.setProperty('--fill', v+'%');
+      vEl.textContent=v+'%';
+      var dev=Math.abs(theo-v);
+      var lag=dev>=15;
+      row.classList.toggle('lag', lag);
+      row.classList.toggle('ok', !lag);
+      devEl.textContent='偏差 '+dev+'pt · '+(lag?'滞后':'受控');
+      if (devNum) devNum.textContent=dev+'pt';
+    }
+    range.addEventListener('input', paint);
+    paint();
+  });
+
+  document.getElementById('savebtn').addEventListener('click', function(){
+    var lags=document.querySelectorAll('.calrow.lag').length;
+    this.textContent='✓ 已确认提交 · 08:47 留痕';
+    this.style.background='linear-gradient(135deg,#004B3A,#013326)';
+    this.disabled=true;
+    toast('周报已生成 · '+ (lags? lags+' 条风险建议已附':'全部受控') +' · 校准回流下周模型');
+  });
+
+  /* ===== 资产：预测准确率曲线 78 → 94% ===== */
+  (function(){
+    var pts=[[78,'W22'],[85,'W23'],[91,'W24'],[94,'W25']];
+    var X0=40,X1=312,Y0=150,Y1=34;
+    function px(i){ return X0+(X1-X0)*i/3; }
+    function py(v){ return Y0-(Y0-Y1)*(v-70)/(100-70); }
+    var d=''; pts.forEach(function(p,i){ d+=(i?' L':'M')+px(i)+','+py(p[0]).toFixed(1); });
+    var s='<path d="'+d+' L'+px(3)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(14,140,127,.09)"/>';
+    s+='<path id="gline" d="'+d+'" fill="none" stroke="'+TEAL+'" stroke-width="2.6" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="4.4" fill="'+(i===3?TEAL:'#FDFEFE')+'" stroke="'+TEAL+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])-11)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#1F3230" font-family="Georgia,serif">'+p[0]+'%</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+19)+'" text-anchor="middle" font-size="10" fill="'+INK3+'">'+p[1]+'</text>';
+    });
+    document.getElementById('growth').innerHTML=s;
+    var gl=document.getElementById('gline'), len=gl.getTotalLength();
+    if (!STATIC){
+      gl.style.strokeDasharray=len; gl.style.strokeDashoffset=len;
+      setTimeout(function(){ gl.style.transition='stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)'; gl.style.strokeDashoffset='0'; },300);
+    }
+  })();
+
+  /* 合环大环 */
+  (function(){
+    var cx=105, cy=105, r=82, s='';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(15,70,60,.2)" stroke-width="1.4"/>';
+    for (var i=0;i<6;i++){
+      var a=-Math.PI/2+i*Math.PI/3;
+      var x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      var lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a);
+      s+='<circle class="fn" data-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7" fill="#C4D8D2" stroke="#FDFEFE" stroke-width="2"/>';
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#58706C">'+LOOP[i]+'</text>';
+    }
+    document.getElementById('bigring').innerHTML=s;
+  })();
+  function lightFinale(){
+    document.querySelectorAll('#bigring .fn').forEach(function(n,i){
+      setTimeout(function(){
+        n.setAttribute('fill', i===LIT ? GREEN : GOLD);
+        n.style.transition='fill .5s';
+      }, STATIC?0:i*260);
+    });
+  }
+
+  /* 出现动画 */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if (e.target.querySelector && e.target.querySelector('#bigring')) lightFinale();
+      io.unobserve(e.target);
+    });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  if (STATIC){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+    lightFinale();
+  }
+})();
+</script>
+</body>
+</html>

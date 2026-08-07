@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 陪练复盘与短板补足 · 战术黑板</title>
+<style>
+  :root{
+    --board:#2E3436; --board2:#353D40; --chalk:#F2EFE6; --chalk2:#C9CFC9; --chalk3:#8E9993;
+    --green:#3FBF7F; --deep:#7FD4A8; --gold:#D8B25C; --coral:#D08676;
+    --line:rgba(242,239,230,.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--chalk); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(900px 500px at 80% -8%, rgba(216,178,92,.08), transparent 60%),
+      radial-gradient(800px 600px at -8% 40%, rgba(63,191,127,.06), transparent 60%),
+      radial-gradient(1200px 900px at 50% 50%, rgba(255,255,255,.025), transparent 70%),
+      repeating-linear-gradient(0deg, rgba(242,239,230,.016) 0 1px, transparent 1px 5px),
+      linear-gradient(160deg,#31383B,#2A3134 55%,#30373A);
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif;}
+  .num{font-family:Georgia,"Times New Roman",serif;}
+  .mono{font-family:"SF Mono",Menlo,monospace;}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:14px 34px;background:rgba(46,52,54,.88);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .loopmark{width:34px;height:34px;flex:none;}
+  .topbar .name{font-size:15px;font-weight:700;color:var(--chalk);}
+  .topbar .world{font-size:11px;color:var(--chalk3);letter-spacing:.28em;margin-top:2px;}
+  .topbar .spacer{flex:1;}
+  .badge-test{font-size:10.5px;letter-spacing:.14em;color:var(--coral);
+    border:1px solid rgba(208,134,118,.5);border-radius:999px;padding:4px 12px;
+    background:rgba(208,134,118,.12);white-space:nowrap;}
+  .backlink{font-size:12.5px;color:var(--chalk2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .25s;white-space:nowrap;}
+  .backlink:hover{color:var(--deep);border-color:var(--deep);}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:0 34px;}
+  .rule{display:flex;align-items:center;gap:18px;margin:88px 0 46px;}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(216,178,92,.55));}
+  .rule::after{background:linear-gradient(90deg,rgba(216,178,92,.55),transparent);}
+  .rule .rt{font-size:11px;letter-spacing:.42em;color:var(--gold);white-space:nowrap;font-weight:600;}
+
+  .card{background:var(--board2);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 1px 2px rgba(0,0,0,.2),0 16px 36px -20px rgba(0,0,0,.55);}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .demo-static .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .demo-static *{animation:none!important;}
+
+  .hero{padding:84px 0 10px;}
+  .hero .clock{font-size:15px;color:var(--chalk3);letter-spacing:.1em;}
+  .hero h1{font-size:50px;line-height:1.2;font-weight:700;margin-top:14px;color:var(--chalk);}
+  .hero h1 em{font-style:normal;color:var(--deep);}
+  .hero .sub{margin-top:18px;font-size:15.5px;line-height:1.9;color:var(--chalk2);max-width:680px;}
+  .hero .sub b{color:var(--chalk);font-weight:600;}
+  .hero .sig{margin-top:26px;padding:20px 26px;border-left:3px solid var(--gold);
+    background:rgba(216,178,92,.07);border-radius:0 16px 16px 0;max-width:720px;}
+  .hero .sig .q{font-size:19px;line-height:1.8;color:var(--chalk);font-weight:600;}
+  .hero .sig .q b{color:var(--gold);}
+  .hero .sig .a{font-size:12.5px;color:var(--chalk3);margin-top:8px;letter-spacing:.06em;}
+
+  .pushgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:44px;}
+  .push{padding:24px;}
+  .push .ptag{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.2em;color:var(--deep);font-weight:700;}
+  .push .ptag .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(63,191,127,.16);}
+  .push h3{font-size:18px;margin:12px 0 8px;font-weight:700;color:var(--chalk);}
+  .push p{font-size:13.5px;line-height:1.85;color:var(--chalk2);}
+  .push .big{font-size:34px;margin-top:6px;color:var(--deep);}
+  .humangate{margin-top:18px;padding:18px 22px;border-radius:16px;
+    background:linear-gradient(135deg,#0E2A20,#0A1F18);color:#EAF4EF;
+    display:flex;align-items:center;gap:16px;box-shadow:0 18px 40px -18px rgba(0,0,0,.6);
+    border:1px solid rgba(127,212,168,.25);}
+  .humangate .icon{flex:none;width:40px;height:40px;border-radius:50%;
+    border:1.5px solid rgba(234,244,239,.5);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .humangate .t1{font-size:13px;font-weight:700;letter-spacing:.06em;}
+  .humangate .t2{font-size:12px;opacity:.82;margin-top:4px;line-height:1.7;}
+
+  /* 签名时刻：短板热力矩阵 */
+  .heatcard{padding:30px;}
+  .heatcard .hh{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .heatcard h3{font-size:17px;font-weight:700;color:var(--chalk);}
+  .heatcard .hh span{font-size:12.5px;color:var(--chalk3);}
+  .heatlegend{margin-left:auto;display:flex;gap:14px;font-size:11.5px;color:var(--chalk2);align-items:center;}
+  .heatlegend .lg{display:flex;align-items:center;gap:6px;}
+  .heatlegend .sw{width:14px;height:14px;border-radius:4px;}
+  .hgrid{margin-top:22px;display:grid;grid-template-columns:200px repeat(3,1fr) 130px;gap:9px;}
+  .hhead{font-size:11.5px;color:var(--chalk3);letter-spacing:.12em;font-weight:700;display:flex;align-items:center;}
+  .hrow{font-size:13.5px;color:var(--chalk);font-weight:600;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;line-height:1.5;}
+  .hrow small{display:block;font-size:10.5px;color:var(--chalk3);font-weight:400;margin-top:2px;}
+  .hcell{border-radius:12px;padding:15px 10px;text-align:center;position:relative;transition:transform .25s;}
+  .hcell:hover{transform:scale(1.04);}
+  .hcell .v{font-size:23px;font-weight:800;font-family:Georgia,serif;}
+  .hcell .d{font-size:10px;margin-top:3px;opacity:.85;font-weight:600;}
+  .hcell.up{outline:2px dashed var(--gold);outline-offset:2.5px;}
+  .hact{font-size:11px;color:var(--chalk2);display:flex;align-items:center;line-height:1.6;}
+  .hact .uptag{display:inline-block;background:rgba(216,178,92,.16);border:1px dashed var(--gold);
+    color:var(--gold);font-size:10px;font-weight:800;border-radius:6px;padding:3px 8px;margin-right:7px;white-space:nowrap;}
+  .heatsum{margin-top:20px;padding:16px 20px;border-radius:14px;background:rgba(63,191,127,.08);
+    border:1px solid rgba(63,191,127,.25);font-size:13.5px;line-height:1.85;color:var(--chalk2);}
+  .heatsum b{color:var(--deep);}
+
+  /* TOP3 短板卡 */
+  .top3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .weak{padding:22px;display:flex;flex-direction:column;}
+  .weak .rank{font-size:11px;letter-spacing:.24em;color:var(--coral);font-weight:800;}
+  .weak h4{font-size:17px;font-weight:800;margin-top:9px;color:var(--chalk);}
+  .weak .wz{margin-top:12px;font-size:12px;line-height:1.8;color:var(--chalk2);}
+  .weak .wz b{color:var(--chalk);}
+  .weak .course{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);}
+  .weak .ct{font-size:10.5px;letter-spacing:.18em;color:var(--chalk3);font-weight:700;}
+  .weak .cchip{display:inline-block;margin:8px 6px 0 0;font-size:11.5px;padding:6px 12px;border-radius:8px;
+    background:rgba(127,212,168,.12);border:1px solid rgba(127,212,168,.35);color:var(--deep);font-weight:600;}
+  .weak .supv{margin-top:12px;font-size:11.5px;color:var(--chalk2);line-height:1.75;}
+  .weak .supv b{color:var(--gold);font-weight:700;}
+
+  /* 人工审核清单 */
+  .reviewcard{margin-top:22px;padding:28px;display:grid;grid-template-columns:1.3fr 1fr;gap:30px;}
+  .reviewcard h3{font-size:17px;font-weight:700;color:var(--chalk);}
+  .reviewcard .sub{font-size:12.5px;color:var(--chalk3);margin-top:6px;}
+  .checklist{margin-top:16px;display:flex;flex-direction:column;gap:12px;}
+  .chkitem{display:flex;gap:13px;align-items:flex-start;padding:13px 16px;border-radius:13px;
+    background:rgba(242,239,230,.04);border:1px solid var(--line);cursor:pointer;transition:all .25s;}
+  .chkitem:hover{border-color:rgba(127,212,168,.4);}
+  .chkitem .box{flex:none;width:22px;height:22px;border-radius:7px;border:1.5px solid var(--chalk3);
+    margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;transition:all .25s;}
+  .chkitem.on{border-color:rgba(63,191,127,.5);background:rgba(63,191,127,.07);}
+  .chkitem.on .box{background:var(--green);border-color:var(--green);color:#0A1F18;font-weight:800;}
+  .chkitem .ctxt{font-size:13px;line-height:1.75;color:var(--chalk2);}
+  .chkitem .ctxt b{color:var(--chalk);font-weight:600;}
+  .pubzone{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;
+    border-left:1px dashed var(--line);padding-left:30px;}
+  .pubbtn{font-size:15.5px;font-weight:800;letter-spacing:.05em;border:none;border-radius:999px;
+    padding:17px 36px;cursor:not-allowed;font-family:inherit;color:#6B7672;background:#3E474A;
+    transition:all .35s;}
+  .pubbtn.ready{color:#0A1F18;background:linear-gradient(135deg,#3FBF7F,#2BA566);cursor:pointer;
+    box-shadow:0 0 0 5px rgba(63,191,127,.18),0 18px 38px -14px rgba(63,191,127,.55);}
+  .pubbtn.ready:hover{transform:translateY(-2px);}
+  .pubnote{font-size:11.5px;color:var(--chalk3);text-align:center;line-height:1.8;}
+
+  /* 合环 */
+  .assets{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:18px;}
+  .acard{padding:24px;}
+  .acard h4{font-size:14.5px;font-weight:700;color:var(--chalk);}
+  .acard .note{font-size:11.5px;color:var(--chalk3);margin-top:4px;}
+  .alist{margin-top:14px;display:flex;flex-direction:column;gap:11px;}
+  .aitem{display:flex;gap:10px;font-size:12.5px;line-height:1.75;color:var(--chalk2);}
+  .aitem .tick{flex:none;width:18px;height:18px;border-radius:50%;background:rgba(63,191,127,.15);
+    color:var(--deep);font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;font-weight:700;}
+  .aitem b{color:var(--chalk);font-weight:600;}
+
+  .finale{margin-top:90px;text-align:center;padding-bottom:30px;}
+  .finale .fring{width:210px;height:210px;margin:0 auto;}
+  .finale h2{font-size:30px;margin-top:34px;font-weight:700;color:var(--chalk);}
+  .finale p{margin:14px auto 0;font-size:14px;line-height:2.0;color:var(--chalk2);max-width:620px;}
+  .finale p b{color:var(--deep);}
+  .footer{padding:34px 0 46px;text-align:center;font-size:11.5px;color:var(--chalk3);letter-spacing:.1em;line-height:2.1;}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);z-index:99;
+    background:#0E2A20;color:#DFF2E7;font-size:13px;font-weight:600;border:1px solid rgba(127,212,168,.4);
+    padding:13px 26px;border-radius:999px;box-shadow:0 18px 40px -12px rgba(0,0,0,.6);
+    transition:transform .45s cubic-bezier(.2,.9,.3,1.2);}
+  .toast.show{transform:translate(-50%,0);}
+
+  @media (max-width:960px){
+    .pushgrid,.top3,.assets,.reviewcard{grid-template-columns:1fr;}
+    .pubzone{border-left:none;padding-left:0;border-top:1px dashed var(--line);padding-top:24px;}
+    .hgrid{grid-template-columns:120px repeat(3,1fr);}
+    .hact{display:none;}
+    .hero h1{font-size:34px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶栏：本页点亮「回流」 -->
+<div class="topbar">
+  <svg class="loopmark" viewBox="0 0 34 34" id="topring"></svg>
+  <div>
+    <div class="name">AI 陪练复盘与短板补足助手</div>
+    <div class="world">战术黑板 · 训练赛季</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge-test">内部测试 · 模拟数据</span>
+  <a class="backlink" href="../index.html">← 返回总览</a>
+</div>
+
+<div class="wrap">
+
+  <!-- 第一幕：早晨 -->
+  <section class="hero reveal">
+    <span class="clock mono">07:30 · 周一 · 培训部</span>
+    <h1 class="serif">早，黄老师。<br>第 3 期陪练昨夜收官，<br><em>黑板上已经写出了答案。</em></h1>
+    <p class="sub">92 名新人完成本轮训练。AI 按八段式生成了复盘初稿，短板、依据、补足课程一一对应——但它不下结论，<b>结论由你审核签字后才算数</b>。</p>
+    <div class="sig">
+      <p class="q">「NBS 流程短板：第 1 期 <b>63%</b> → 第 3 期 <b>21%</b>。<br>上次匹配的补足建议，被这一期证明是对的。」</p>
+      <p class="a">AI 记得它上次说过什么——建议第一次有了效果闭环</p>
+    </div>
+    <div class="pushgrid">
+      <div class="card push">
+        <span class="ptag"><span class="dot"></span>信号 · 主动推送</span>
+        <h3>第 3 期收官：92 人完成</h3>
+        <p>完成率 96%，平均分 81.4，通关率 88%。脱敏数据摘要已就位，等待复盘。</p>
+        <div class="big num">92<span style="font-size:13px;color:var(--chalk3)"> 人 · 通关率 88%</span></div>
+      </div>
+      <div class="card push">
+        <span class="ptag"><span class="dot"></span>理解 · 初稿已生成</span>
+        <h3>八段式复盘初稿</h3>
+        <p>摘要 / 表现 / 短板 TOP3 / 补足建议 / 跟进 / 反哺 / 审核清单 / 待补充——课程匹配只用你给的清单，不编造。</p>
+        <div class="big num">8<span style="font-size:13px;color:var(--chalk3)"> 段 · 零编造</span></div>
+      </div>
+      <div class="card push">
+        <span class="ptag"><span class="dot"></span>任务 · 今天上午</span>
+        <h3>人工审核清单 4 项</h3>
+        <p>数据口径、脱敏、用途边界、对外表达——四项全部勾选后，「确认发布」才会亮起。</p>
+        <div class="big num">4<span style="font-size:13px;color:var(--chalk3)"> 项 · 等你签字</span></div>
+      </div>
+    </div>
+    <div class="humangate">
+      <div class="icon">人</div>
+      <div>
+        <div class="t1">AI 整理归纳，人判断与签字</div>
+        <div class="t2">AI 负责整理、归纳、检查、生成内部初稿；人负责提供真实材料、确认数据准确、判断业务原因、决定是否纳入正式推动——未经人工审核，不作为正式评价或管理结论。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">签名时刻 · 前 8 秒</span></div>
+
+  <!-- 第二幕：短板热力矩阵 -->
+  <section class="reveal">
+    <div class="card heatcard">
+      <div class="hh">
+        <h3>短板热力矩阵 · 三期赛季</h3>
+        <span>行 = 短板项 · 列 = 训练期数 · 数值 = 该短板失分学员占比</span>
+        <div class="heatlegend">
+          <span class="lg"><span class="sw" style="background:#B96655"></span>高发</span>
+          <span class="lg"><span class="sw" style="background:#C9A34E"></span>收窄</span>
+          <span class="lg"><span class="sw" style="background:#3F8F68"></span>受控</span>
+        </div>
+      </div>
+      <div class="hgrid" id="hgrid"></div>
+      <div class="heatsum">
+        <b>「异议处理」连续三期卡在 35% 以上，已自动升舱</b>——从课程匹配升级为「主管一对一跟练 + 话术库加餐」干预层级；其余三项短板均按 AI 上期的补足建议收窄，<b>建议第一次可以被验证对错</b>。
+      </div>
+    </div>
+
+    <div style="height:22px"></div>
+    <div class="top3">
+      <div class="card weak">
+        <span class="rank">短板 TOP 1 · 已升舱</span>
+        <h4>异议处理</h4>
+        <p class="wz"><b>表现</b>：面对「收益不如理财」类质疑，38% 学员回避或强辩<br><b>依据</b>：第 3 期异议轮平均分 14.2/25<br><b>影响环节</b>：NBS 需求说服 · 促成</p>
+        <div class="course">
+          <span class="ct">补足课程（来自培训部清单）</span><br>
+          <span class="cchip">异议处理场景跟练包</span>
+          <span class="cchip">主管一对一陪练 ×2 次/周</span>
+        </div>
+        <p class="supv"><b>主管跟进</b>：未通关学员 17 人 · 每周两次跟练 · 两周后复测 ≥ 80 分</p>
+      </div>
+      <div class="card weak">
+        <span class="rank">短板 TOP 2 · 收窄中</span>
+        <h4>健康险条款讲解</h4>
+        <p class="wz"><b>表现</b>：等待期与免赔额表述混淆，第 1 期 55% → 第 3 期 25%<br><b>依据</b>：条款轮错误集中在 2 个知识点<br><b>影响环节</b>：产品说明 · 合规表达</p>
+        <div class="course">
+          <span class="ct">补足课程（来自培训部清单）</span><br>
+          <span class="cchip">健康险条款精读工作坊</span>
+        </div>
+        <p class="supv"><b>主管跟进</b>：维持现有课程 · 下期观察是否跌破 20%</p>
+      </div>
+      <div class="card weak">
+        <span class="rank">短板 TOP 3 · 收窄中</span>
+        <h4>计划书工具实操</h4>
+        <p class="wz"><b>表现</b>：工具步骤会背不会用，情景题失分 48% → 18%<br><b>依据</b>：实操轮平均用时超标 1.8 倍<br><b>影响环节</b>：建议书制作 · 面谈效率</p>
+        <div class="course">
+          <span class="ct">补足课程（来自培训部清单）</span><br>
+          <span class="cchip">计划书 30 分钟实操营</span>
+        </div>
+        <p class="supv"><b>主管跟进</b>：抽查 5 份实操作业 · 周五前完成</p>
+      </div>
+    </div>
+
+    <div class="card reviewcard">
+      <div>
+        <h3>人工审核清单 · 签字的份量</h3>
+        <p class="sub">四项全部勾选，右侧「确认发布」才会亮——这不是仪式感，是责任落点。</p>
+        <div class="checklist" id="checklist">
+          <div class="chkitem"><span class="box">✓</span><span class="ctxt"><b>数据口径已核对</b>：92 人 / 96% / 81.4 分与后台原始记录一致</span></div>
+          <div class="chkitem"><span class="box">✓</span><span class="ctxt"><b>脱敏已确认</b>：初稿不含可识别的学员姓名、工号与客户信息</span></div>
+          <div class="chkitem"><span class="box">✓</span><span class="ctxt"><b>不作为人员评价依据</b>：本复盘仅用于培训改进，不进考核档案</span></div>
+          <div class="chkitem"><span class="box">✓</span><span class="ctxt"><b>对外表达已审批</b>：如需对机构通报，由培训部负责人终审后发出</span></div>
+        </div>
+      </div>
+      <div class="pubzone">
+        <button class="pubbtn" id="pubbtn" disabled>确认发布 · 第 3 期复盘</button>
+        <p class="pubnote" id="pubnote">还差 4 项未勾选<br>AI 起草 · 人签字后生效</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"><span class="rt">合环 · 双向成长</span></div>
+
+  <!-- 第三幕：合环 -->
+  <section class="reveal">
+    <div class="assets">
+      <div class="card acard">
+        <h4>双向成长曲线</h4>
+        <p class="note">人在消除短板，AI 的建议也在被验证</p>
+        <svg id="growth" viewBox="0 0 360 210" style="width:100%;display:block;margin-top:10px;"></svg>
+        <p style="font-size:12px;color:var(--chalk2);line-height:1.8;margin-top:6px;">短板消除率 40%→82%；AI 建议有效率 61%→78%。<b style="color:var(--deep)">两条线一起往上走，才叫陪练。</b></p>
+      </div>
+      <div class="card acard">
+        <h4>本期沉淀</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">✓</span><span><b>第 3 期复盘报告</b>：审核人、审核时间、口径版本全程留痕</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>短板追踪档</b>：四项短板三期数值入库，可横向对比</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>升舱记录</b>：异议处理升舱原因与时间戳入档</span></div>
+        </div>
+      </div>
+      <div class="card acard">
+        <h4>回流 · 反哺下一轮</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">✓</span><span>第 4 期训练脚本：<b>异议轮情景 +2 道</b>（来自本期失分点）</span></div>
+          <div class="aitem"><span class="tick">✓</span><span>评分维度微调建议：<b>异议处理细分「回避/强辩」标签</b></span></div>
+          <div class="aitem"><span class="tick">✓</span><span>案例样本库：<b>本期优秀作答 6 条</b>脱敏入库</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finale">
+      <svg class="fring" viewBox="-30 -30 270 270" id="bigring"></svg>
+      <h2 class="serif">建议被验证，才是真的陪练。</h2>
+      <p>训练收官 → AI 生成复盘初稿 → 人审核签字 → 短板匹配课程 → 留痕入库 → <b>下期结果验证上期建议，反哺再下一轮</b>。<br>这个环上最特别的读数：<b>AI 的建议也开始有「命中率」了</b>。</p>
+    </div>
+  </section>
+
+  <div class="footer">
+    AI 陪练复盘与短板补足助手 · 战术黑板 Demo　|　内部测试 · 模拟数据　|　AI 输出仅为内部初稿，须经人工审核<br>
+    Loop：信号 → 理解 → 行动 → 复盘 → 资产 → 回流
+  </div>
+
+</div>
+
+<div class="toast" id="toast">已发布 · 复盘第 3 期入档</div>
+
+<script>
+(function(){
+  var HASH = location.hash || '';
+  var STATIC = HASH.indexOf('demo') >= 0;
+  if (STATIC) document.documentElement.classList.add('demo-static');
+  var LOOP=['信号','理解','行动','复盘','资产','回流'];
+  var LIT=5;
+  var GREEN='#3FBF7F', DEEP='#7FD4A8', GOLD='#D8B25C', CORAL='#D08676', CHALK3='#8E9993';
+
+  /* 顶栏小环 */
+  (function(){
+    var s='', cx=17, cy=17, r=12;
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2+j*Math.PI/3;
+      var x=(cx+r*Math.cos(a)).toFixed(1), y=(cy+r*Math.sin(a)).toFixed(1);
+      s+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===LIT?3.6:2.2)+'" fill="'+(j===LIT?GREEN:'#6E7A74')+'"/>';
+    }
+    s+='<circle cx="17" cy="17" r="16.2" fill="none" stroke="'+GOLD+'" stroke-width="0.8" opacity="0.7"/>';
+    document.getElementById('topring').innerHTML=s;
+  })();
+
+  /* 热力矩阵 */
+  var ROWS = [
+    {name:'异议处理', sub:'NBS · 需求说服', vals:[40,36,35], up:true, act:'升舱：主管一对一'},
+    {name:'健康险条款讲解', sub:'产品说明 · 合规', vals:[55,38,25], up:false, act:'维持课程'},
+    {name:'计划书工具实操', sub:'建议书 · 效率', vals:[48,30,18], up:false, act:'实操作业抽查'},
+    {name:'NBS 流程运用', sub:'面谈流程', vals:[63,41,21], up:false, act:'已验证有效'}
+  ];
+  function cellColor(v){
+    // v: 18..63 → t: 0(受控)..1(高发)
+    var t = Math.min(Math.max((v-18)/(63-18),0),1);
+    function mix(c1,c2,k){ return c1.map(function(x,i){ return Math.round(x+(c2[i]-x)*k); }); }
+    var good=[63,143,104], mid=[201,163,78], bad=[185,102,85];
+    var c = t<0.5 ? mix(good,mid,t*2) : mix(mid,bad,(t-0.5)*2);
+    return 'rgba('+c[0]+','+c[1]+','+c[2]+',.88)';
+  }
+  (function(){
+    var h = '<div class="hhead"></div><div class="hhead">第 1 期</div><div class="hhead">第 2 期</div><div class="hhead">第 3 期</div><div class="hhead">处置</div>';
+    ROWS.forEach(function(r){
+      h += '<div class="hrow">'+r.name+'<small>'+r.sub+'</small></div>';
+      r.vals.forEach(function(v, i){
+        var d = i===0 ? '' : (r.vals[i-1]-v >= 0 ? '▼ '+(r.vals[i-1]-v)+'pt' : '▲ '+(v-r.vals[i-1])+'pt');
+        h += '<div class="hcell'+(r.up && i===2?' up':'')+'" style="background:'+cellColor(v)+'">'+
+          '<div class="v" style="color:'+(v>32?'#FFF6EC':'#F2EFE6')+'">'+v+'%</div>'+
+          '<div class="d" style="color:'+(v>32?'#FFEBDD':'#D9E4DC')+'">'+d+'</div></div>';
+      });
+      h += '<div class="hact">'+(r.up?'<span class="uptag">升舱</span>':'')+r.act+'</div>';
+    });
+    document.getElementById('hgrid').innerHTML = h;
+  })();
+
+  /* 人工审核清单 */
+  var checked = 0;
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+  document.querySelectorAll('.chkitem').forEach(function(el){
+    el.addEventListener('click', function(){
+      el.classList.toggle('on');
+      checked = document.querySelectorAll('.chkitem.on').length;
+      var btn = document.getElementById('pubbtn');
+      var note = document.getElementById('pubnote');
+      if (checked === 4){
+        btn.classList.add('ready'); btn.disabled = false;
+        note.innerHTML = '四项已齐 · 可以发布<br>发布人将记为：黄老师本人';
+      } else {
+        btn.classList.remove('ready'); btn.disabled = true;
+        note.innerHTML = '还差 ' + (4-checked) + ' 项未勾选<br>AI 起草 · 人签字后生效';
+      }
+    });
+  });
+  document.getElementById('pubbtn').addEventListener('click', function(){
+    if (this.disabled) return;
+    this.textContent = '✓ 已发布 · 第 3 期复盘入档';
+    this.style.background = 'linear-gradient(135deg,#0E2A20,#0A1F18)';
+    this.style.color = '#7FD4A8';
+    toast('第 3 期复盘已发布 · 审核人：黄老师 · 已留痕');
+  });
+
+  /* 双向成长曲线 */
+  (function(){
+    var w1=[[40,'第 1 期'],[65,'第 2 期'],[82,'第 3 期']];
+    var w2=[[61,''],[70,''],[78,'']];
+    var X0=46,X1=330,Y0=170,Y1=30;
+    function px(i){ return X0+(X1-X0)*i/2; }
+    function py(v){ return Y0-(Y0-Y1)*(v-30)/(90-30); }
+    function path(pts){ var d=''; pts.forEach(function(p,i){ d+=(i?' L':'M')+px(i)+','+py(p[0]).toFixed(1); }); return d; }
+    var s='';
+    s+='<path d="'+path(w1)+' L'+px(2)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(63,191,127,.10)"/>';
+    s+='<path id="g1" d="'+path(w1)+'" fill="none" stroke="'+GREEN+'" stroke-width="2.6" stroke-linecap="round"/>';
+    s+='<path id="g2" d="'+path(w2)+'" fill="none" stroke="'+GOLD+'" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>';
+    w1.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="4.4" fill="'+(i===2?GREEN:'#353D40')+'" stroke="'+GREEN+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])+18)+'" text-anchor="middle" font-size="11.5" font-weight="700" fill="#7FD4A8" font-family="Georgia,serif">'+p[0]+'%</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+20)+'" text-anchor="middle" font-size="10" fill="'+CHALK3+'">第 '+(i+1)+' 期</text>';
+    });
+    w2.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="3.8" fill="#353D40" stroke="'+GOLD+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])-10)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+GOLD+'" font-family="Georgia,serif">'+p[0]+'%</text>';
+    });
+    s+='<text x="'+X0+'" y="18" font-size="10.5" fill="#7FD4A8" font-weight="700">—— 短板消除率（人）</text>';
+    s+='<text x="'+X0+150+'" y="18" font-size="10.5" fill="'+GOLD+'" font-weight="700">- - 建议有效率（AI）</text>';
+    document.getElementById('growth').innerHTML=s;
+    if (!STATIC){
+      ['g1','g2'].forEach(function(id,k){
+        var gl=document.getElementById(id), len=gl.getTotalLength();
+        gl.style.strokeDasharray = id==='g2' ? '6 5' : len;
+        if (id==='g1'){
+          gl.style.strokeDashoffset=len;
+          setTimeout(function(){ gl.style.transition='stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)'; gl.style.strokeDashoffset='0'; },300);
+        }
+      });
+    }
+  })();
+
+  /* 合环大环 */
+  (function(){
+    var cx=105, cy=105, r=82, s='';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(242,239,230,.22)" stroke-width="1.4"/>';
+    for (var i=0;i<6;i++){
+      var a=-Math.PI/2+i*Math.PI/3;
+      var x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      var lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a);
+      s+='<circle class="fn" data-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7" fill="#46514C" stroke="#2E3436" stroke-width="2"/>';
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#C9CFC9">'+LOOP[i]+'</text>';
+    }
+    document.getElementById('bigring').innerHTML=s;
+  })();
+  function lightFinale(){
+    document.querySelectorAll('#bigring .fn').forEach(function(n,i){
+      setTimeout(function(){
+        n.setAttribute('fill', i===LIT ? GREEN : GOLD);
+        n.style.transition='fill .5s';
+      }, STATIC?0:i*260);
+    });
+  }
+
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if (e.target.querySelector && e.target.querySelector('#bigring')) lightFinale();
+      io.unobserve(e.target);
+    });
+  },{threshold:.18});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  if (STATIC){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+    lightFinale();
+  }
+})();
+</script>
+</body>
+</html>
