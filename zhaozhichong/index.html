@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消保处罚分析 · 监管风向仪</title>
+<style>
+  :root{
+    --sky:#F2F6FA; --paper:#FCFDFE; --paper2:#EAF1F7;
+    --ink:#1B2E44; --ink2:#51677E; --ink3:#8AA0B5;
+    --navy:#16324F; --steel:#3E617F;
+    --green:#00A758; --deep:#004B3A; --gold:#C89A3A; --coral:#B65F50;
+    --line:rgba(22,50,79,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1050px 480px at 84% -8%, rgba(62,97,127,.14), transparent 62%),
+      radial-gradient(820px 520px at -8% 46%, rgba(200,154,58,.07), transparent 60%),
+      repeating-linear-gradient(45deg, rgba(22,50,79,.02) 0 2px, transparent 2px 28px),
+      linear-gradient(168deg,#F4F8FB,#E6EEF6 55%,#EFF4F9);
+  }
+  .serif{font-family:"Songti SC","STSong","Noto Serif SC",serif;}
+  .num{font-family:Georgia,"Times New Roman",serif;}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+    padding:14px 34px;background:rgba(244,248,251,.88);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .loopmark{width:34px;height:34px;flex:none;}
+  .topbar .name{font-size:15px;font-weight:700;}
+  .topbar .world{font-size:11px;color:var(--ink2);letter-spacing:.28em;margin-top:2px;}
+  .topbar .spacer{flex:1;}
+  .badge-test{font-size:10.5px;letter-spacing:.14em;color:var(--coral);
+    border:1px solid rgba(182,95,80,.4);border-radius:999px;padding:4px 12px;
+    background:rgba(249,236,231,.7);white-space:nowrap;}
+  .backlink{font-size:12.5px;color:var(--ink2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .25s;white-space:nowrap;}
+  .backlink:hover{color:var(--navy);border-color:var(--navy);}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:0 34px;}
+  .rule{display:flex;align-items:center;gap:18px;margin:84px 0 44px;}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(200,154,58,.6));}
+  .rule::after{background:linear-gradient(90deg,rgba(200,154,58,.6),transparent);}
+  .rule .rt{font-size:11px;letter-spacing:.42em;color:var(--gold);white-space:nowrap;font-weight:600;}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 1px 2px rgba(22,50,79,.06),0 14px 34px -18px rgba(22,50,79,.25);}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .demo-static .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  .demo-static *{animation:none!important;transition:none!important;}
+
+  .hero{padding:80px 0 8px;}
+  .hero .clock{font-size:15px;color:var(--ink2);letter-spacing:.1em;}
+  .hero h1{font-size:50px;line-height:1.2;font-weight:700;margin-top:14px;}
+  .hero h1 em{font-style:normal;color:var(--steel);}
+  .hero .sub{margin-top:18px;font-size:15.5px;line-height:1.9;color:var(--ink2);max-width:700px;}
+  .hero .sub b{color:var(--ink);font-weight:600;}
+  .pushgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:42px;}
+  .push{padding:24px;}
+  .push .ptag{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.2em;color:var(--navy);font-weight:700;}
+  .push .ptag .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(0,167,88,.14);}
+  .push h3{font-size:18px;margin:12px 0 8px;font-weight:700;}
+  .push p{font-size:13.5px;line-height:1.85;color:var(--ink2);}
+  .push .big{font-size:34px;margin-top:6px;color:var(--steel);}
+  .humangate{margin-top:18px;padding:18px 22px;border-radius:16px;
+    background:linear-gradient(135deg,#004B3A,#013326);color:#EAF4EF;
+    display:flex;align-items:center;gap:16px;box-shadow:0 18px 40px -18px rgba(0,75,58,.55);}
+  .humangate .icon{flex:none;width:40px;height:40px;border-radius:50%;
+    border:1.5px solid rgba(234,244,239,.5);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .humangate .t1{font-size:13px;font-weight:700;letter-spacing:.06em;}
+  .humangate .t2{font-size:12px;opacity:.82;margin-top:4px;line-height:1.7;}
+
+  /* 风向仪 */
+  .windcard{padding:30px;}
+  .windcard .wh{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .windcard h3{font-size:17px;font-weight:700;}
+  .windcard .wh span{font-size:12.5px;color:var(--ink2);}
+  .qpills{margin-left:auto;display:flex;gap:7px;}
+  .qpill{font-size:12px;font-weight:700;padding:7px 15px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper2);color:var(--ink2);font-family:inherit;transition:all .3s;}
+  .qpill.on{background:var(--navy);color:#F0F5FA;border-color:var(--navy);}
+  .qpill:hover:not(.on){border-color:var(--navy);color:var(--navy);}
+  .windwrap{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;margin-top:18px;align-items:stretch;}
+  .compassbox{background:linear-gradient(180deg,#F4F8FB,#EAF1F7);border:1px solid var(--line);border-radius:16px;padding:8px;}
+  .streambox{background:var(--paper2);border:1px solid var(--line);border-radius:16px;padding:18px 20px;}
+  .streambox .stt{font-size:13px;font-weight:800;color:var(--navy);}
+  .streambox .sts{font-size:11.5px;color:var(--ink2);margin-top:3px;}
+  .polline{margin-top:14px;display:flex;flex-direction:column;gap:0;position:relative;padding-left:18px;}
+  .polline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1.6px;background:rgba(22,50,79,.2);}
+  .pol{position:relative;padding:7px 0;font-size:12px;line-height:1.65;color:var(--ink2);}
+  .pol::before{content:"";position:absolute;left:-16.5px;top:12px;width:8px;height:8px;border-radius:50%;
+    background:var(--paper);border:2px solid var(--steel);}
+  .pol b{color:var(--ink);font-weight:700;}
+  .pol .pd{color:var(--ink3);font-size:10.5px;margin-right:7px;font-weight:700;}
+
+  /* 素材篮 */
+  .basketcard{padding:28px;}
+  .basketcard h3{font-size:16px;font-weight:800;}
+  .basketcard .bsub{font-size:12.5px;color:var(--ink2);margin-top:5px;}
+  .casegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:18px;}
+  .ccase{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;transition:all .3s;position:relative;}
+  .ccase .cy{font-size:10.5px;letter-spacing:.16em;color:var(--steel);font-weight:800;}
+  .ccase h5{font-size:14px;margin:8px 0 6px;font-weight:800;line-height:1.55;}
+  .ccase p{font-size:12px;line-height:1.8;color:var(--ink2);}
+  .ccase .camt{margin-top:9px;font-size:13px;font-weight:800;color:var(--coral);}
+  .ccase .cacts{margin-top:12px;display:flex;gap:7px;}
+  .ccase .cbtn{flex:1;font-size:11px;font-weight:700;padding:7px 0;border-radius:8px;border:1px solid var(--line);
+    background:var(--paper);color:var(--ink2);cursor:pointer;font-family:inherit;transition:all .25s;}
+  .ccase .cbtn.on[data-a="take"]{background:var(--navy);color:#F0F5FA;border-color:var(--navy);}
+  .ccase .cbtn.on[data-a="doubt"]{background:var(--gold);color:#FBF5E4;border-color:var(--gold);}
+  .ccase .cbtn.on[data-a="drop"]{background:#C3CDD8;color:#5A6B7C;border-color:#C3CDD8;}
+  .ccase.doubt::after{content:"需人工核实原文";position:absolute;top:-9px;right:14px;font-size:10px;font-weight:800;
+    color:#fff;background:var(--gold);border-radius:6px;padding:3px 9px;letter-spacing:.05em;}
+  .ccase.drop{opacity:.45;}
+  .basketacts{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .packbtn{font-size:15px;font-weight:800;border:none;border-radius:999px;padding:16px 34px;cursor:not-allowed;
+    font-family:inherit;color:#F4F8FB;background:linear-gradient(135deg,#8AA0B5,#6B8098);opacity:.6;transition:all .3s;}
+  .packbtn.ready{cursor:pointer;background:linear-gradient(135deg,#16324F,#0F2438);opacity:1;
+    box-shadow:0 0 0 5px rgba(22,50,79,.12),0 18px 36px -14px rgba(22,50,79,.55);}
+  .packbtn.ready:hover{transform:translateY(-2px);}
+  .basketnote{font-size:12px;color:var(--ink2);line-height:1.8;}
+  .basketnote b{color:var(--ink);}
+
+  /* 合环 */
+  .assets{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;}
+  .acard{padding:24px;}
+  .acard h4{font-size:14.5px;font-weight:700;}
+  .acard .asub{font-size:12px;color:var(--ink2);margin-top:5px;line-height:1.7;}
+  .acard .asub b{color:var(--ink);}
+  .alist{margin-top:14px;display:flex;flex-direction:column;gap:11px;}
+  .aitem{display:flex;gap:10px;font-size:12.5px;line-height:1.75;color:var(--ink2);}
+  .aitem .tick{flex:none;width:18px;height:18px;border-radius:50%;background:var(--paper2);
+    color:var(--navy);font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;font-weight:700;border:1px solid var(--line);}
+  .aitem b{color:var(--ink);font-weight:600;}
+
+  .finale{margin-top:88px;text-align:center;padding-bottom:28px;}
+  .finale .fring{width:205px;height:205px;margin:0 auto;}
+  .finale h2{font-size:29px;margin-top:32px;font-weight:700;}
+  .finale p{margin:13px auto 0;font-size:14px;line-height:2.0;color:var(--ink2);max-width:620px;}
+  .finale p b{color:var(--steel);}
+  .footer{padding:32px 0 44px;text-align:center;font-size:11.5px;color:var(--ink3);letter-spacing:.1em;line-height:2.1;}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);z-index:99;
+    background:var(--navy);color:#F0F5FA;font-size:13px;font-weight:600;
+    padding:13px 26px;border-radius:999px;box-shadow:0 18px 40px -12px rgba(15,35,55,.55);
+    transition:transform .45s cubic-bezier(.2,.9,.3,1.2);}
+  .toast.show{transform:translate(-50%,0);}
+
+  @media (max-width:960px){
+    .pushgrid,.assets,.casegrid,.windwrap{grid-template-columns:1fr;}
+    .hero h1{font-size:34px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶栏：本页点亮「信号」 -->
+<div class="topbar">
+  <svg class="loopmark" viewBox="0 0 34 34" id="topring"></svg>
+  <div>
+    <div class="name">消保处罚分析助手</div>
+    <div class="world">监管风向仪 · 年度复盘</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge-test">内部测试 · 模拟数据</span>
+  <a class="backlink" href="../index.html">← 返回总览</a>
+</div>
+
+<div class="wrap">
+
+  <!-- 第一幕：早晨 -->
+  <section class="hero reveal">
+    <div class="clock">周一 · 09:00 · 合规研究岗</div>
+    <h1>早，智充。<br>Q3 风向已更新，<em>销售误导连续三季最强</em>。</h1>
+    <p class="sub">2025 年全行业消保处罚昨夜完成第九次收录：214 件、2.7 亿罚金，逐条可溯源。
+      年度 PPT 的素材篮已经备好——<b>但哪条案例配得上"典型"，由你来定</b>。</p>
+    <div class="pushgrid">
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>信号 · 主动推送</span>
+        <h3>处罚数据收录</h3>
+        <p>银保渠道 214 件，环比 +18%，全部附原文链接。</p>
+        <div class="big num">214 件</div>
+      </div>
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>理解 · 上下文</span>
+        <h3>风向研判</h3>
+        <p>销售误导占 31%，连续三季为最强风向。</p>
+        <div class="big num">31%</div>
+      </div>
+      <div class="push card">
+        <span class="ptag"><i class="dot"></i>任务 · 待你完成</span>
+        <h3>年度 PPT 素材篮</h3>
+        <p>3 张候选典型案例卡，等你采信定夺。</p>
+        <div class="big num">3 卡</div>
+      </div>
+    </div>
+    <div class="humangate">
+      <div class="icon">✋</div>
+      <div>
+        <div class="t1">人工闸门 · 数据可溯源，结论人来下</div>
+        <div class="t2">AI 只汇编公开处罚文书与政策原文，绝不编造案例。"哪个案例有代表性、哪条趋势值得写进 PPT"——判断权在你。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">签名时刻 · 监管风向仪</span></div>
+
+  <!-- 第二幕：风向仪 -->
+  <section class="reveal">
+    <div class="card windcard">
+      <div class="wh">
+        <h3>八个方位，八类违规</h3>
+        <span>风羽越长，该类处罚占比越高 · 点季度看风向变化</span>
+        <div class="qpills" id="qpills">
+          <button class="qpill" data-q="0">Q1</button>
+          <button class="qpill" data-q="1">Q2</button>
+          <button class="qpill on" data-q="2">Q3</button>
+        </div>
+      </div>
+      <div class="windwrap">
+        <div class="compassbox">
+          <svg id="compass" viewBox="0 0 460 420" style="width:100%;height:auto;display:block;"></svg>
+        </div>
+        <div class="streambox">
+          <div class="stt">月度罚金流（万元）· 2025</div>
+          <div class="sts">6 月"代理退保黑产"专项集中处罚推高水位</div>
+          <svg id="stream" viewBox="0 0 380 190" style="width:100%;height:auto;display:block;margin-top:6px;"></svg>
+          <div class="polline">
+            <div class="pol"><span class="pd">03-14</span><b>《消保监管评价办法》修订</b>——评价结果与机构评级挂钩</div>
+            <div class="pol"><span class="pd">06-02</span><b>代理退保黑产专项整治</b>启动，为期六个月</div>
+            <div class="pol"><span class="pd">08-19</span><b>销售行为可回溯管理</b>新规：双录覆盖扩至经代渠道</div>
+            <div class="pol"><span class="pd">09-30</span><b>Q3 通气会</b>：点名"销售误导回潮"，Q4 将飞行检查</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">人的行动 · PPT 素材篮</span></div>
+
+  <!-- 第三幕：素材篮 -->
+  <section class="reveal">
+    <div class="card basketcard">
+      <h3>哪条案例配得上"典型"，你来定</h3>
+      <div class="bsub">采信进 PPT、存疑待核实、弃用不留痕——<b style="color:var(--ink)">每张卡都必须有你的决定</b>。</div>
+      <div class="casegrid" id="casegrid">
+        <div class="ccase" data-i="0">
+          <span class="cy">Q3 · 银保渠道 · 文书号 〔2025〕112 号</span>
+          <h5>某寿分公司夸大分红收益，误导销售 47 单</h5>
+          <p>将"低档演示收益"口头表述为"保证收益"，涉及老年客户 23 人。</p>
+          <div class="camt num">罚 218 万 · 3 人禁业</div>
+          <div class="cacts"><button class="cbtn" data-a="take">采信</button><button class="cbtn" data-a="doubt">存疑</button><button class="cbtn" data-a="drop">弃用</button></div>
+        </div>
+        <div class="ccase" data-i="1">
+          <span class="cy">Q3 · 个险渠道 · 文书号 〔2025〕098 号</span>
+          <h5>客户信息批量外发合作方，泄露 1.2 万条</h5>
+          <p>未经客户授权将保单信息提供第三方电销，触发刑事移送。</p>
+          <div class="camt num">罚 350 万 · 移送公安</div>
+          <div class="cacts"><button class="cbtn" data-a="take">采信</button><button class="cbtn" data-a="doubt">存疑</button><button class="cbtn" data-a="drop">弃用</button></div>
+        </div>
+        <div class="ccase" data-i="2">
+          <span class="cy">Q2 · 经代渠道 · 文书号 〔2025〕061 号</span>
+          <h5>双录缺失 + 代抄风险提示语句</h5>
+          <p>抽查 30 单中 11 单无同步录音录像，6 单风险语句为代理人代抄。</p>
+          <div class="camt num">罚 96 万 · 责令整改</div>
+          <div class="cacts"><button class="cbtn" data-a="take">采信</button><button class="cbtn" data-a="doubt">存疑</button><button class="cbtn" data-a="drop">弃用</button></div>
+        </div>
+      </div>
+      <div class="basketacts">
+        <button class="packbtn" id="packbtn" disabled>先完成 3 张卡的定夺</button>
+        <div class="basketnote" id="basketnote">已定夺 <b>0</b> / 3 张 · 生成素材包后：文书原文链接、占比数据、你的取舍理由一并打包。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule reveal"><span class="rt">合环 · 复盘 / 资产 / 回流</span></div>
+
+  <!-- 第四幕：合环 -->
+  <section class="reveal">
+    <div class="assets">
+      <div class="card acard">
+        <h4>复盘 · 每一次定夺都留痕</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">✓</span><span><b>Q1</b> · 你存疑的"代客抄录"案例，核实后确认属实</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>Q2</b> · 你预判"信息泄露将成新风向"，Q3 验证命中</span></div>
+          <div class="aitem"><span class="tick">✓</span><span><b>Q3</b> · 素材包已生成，取舍理由存档</span></div>
+        </div>
+      </div>
+      <div class="card acard">
+        <h4>资产 · 你的研判越来越准：风向预测命中率</h4>
+        <div class="asub">每个季度你标记的"下季风向"，与下一季实际对照——这是<b>你</b>的盘感曲线。</div>
+        <svg id="growth" viewBox="0 0 340 180" style="width:100%;height:auto;display:block;margin-top:8px;"></svg>
+      </div>
+      <div class="card acard">
+        <h4>回流 · 风向仪越转越灵</h4>
+        <div class="alist">
+          <div class="aitem"><span class="tick">↺</span><span>你的采信偏好 → <b>案例推荐排序</b>更新，Q4 候选已重排</span></div>
+          <div class="aitem"><span class="tick">↺</span><span>3 次存疑核实结果 → <b>文书可信度标签</b>体系建立</span></div>
+          <div class="aitem"><span class="tick">↺</span><span>年度素材包 → 自动汇入<b>合规培训案例库</b></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finale reveal">
+      <svg class="fring" viewBox="0 0 210 210" id="bigring"></svg>
+      <h2 class="serif">风向不停，仪器不眠</h2>
+      <p>Q4 飞检启动那天，风向仪会第一时间转给你看。<br>
+        AI 负责盯住八方的风，<b>智充负责判断哪阵风值得写进年度总结</b>。</p>
+    </div>
+
+    <div class="footer">中宏保险 · Loop 升级打样 · 学员案例「消保处罚分析助手」<br>监管风向仪 · 本页签名节点：信号</div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var HASH = location.hash || '';
+  var STATIC = HASH.indexOf('demo') >= 0;
+  if (STATIC) document.documentElement.classList.add('demo-static');
+  var LOOP=['信号','理解','行动','复盘','资产','回流'];
+  var LIT=0;
+  var GREEN='#00A758', GOLD='#C89A3A', NAVY='#16324F', STEEL='#3E617F', INK3='#8AA0B5';
+
+  /* 顶栏小环 */
+  (function(){
+    var s='', cx=17, cy=17, r=12;
+    for (var j=0;j<6;j++){
+      var a=-Math.PI/2+j*Math.PI/3;
+      var x=(cx+r*Math.cos(a)).toFixed(1), y=(cy+r*Math.sin(a)).toFixed(1);
+      s+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===LIT?3.6:2.2)+'" fill="'+(j===LIT?GREEN:'#A5B8C9')+'"/>';
+    }
+    s+='<circle cx="17" cy="17" r="16.2" fill="none" stroke="'+GOLD+'" stroke-width="0.8" opacity="0.65"/>';
+    document.getElementById('topring').innerHTML=s;
+  })();
+
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  /* ===== 风向仪罗盘 ===== */
+  var DIRS=['销售误导','信息泄露','乱收费','理赔纠纷','虚假宣传','代客操作','数据违规','其他'];
+  var QDATA=[
+    [24,12,18,15,9,6,8,8],
+    [27,15,14,13,10,7,7,7],
+    [31,17,11,12,11,6,6,6]
+  ];
+  var CX=230, CY=210, R=150;
+
+  function drawCompass(q){
+    var vals=QDATA[q], maxI=0;
+    vals.forEach(function(v,i){ if (v>vals[maxI]) maxI=i; });
+    var s='';
+    /* 底盘 */
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="'+R+'" fill="#FCFDFE" stroke="rgba(22,50,79,.25)" stroke-width="1.4"/>';
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="'+(R*0.66)+'" fill="none" stroke="rgba(22,50,79,.1)" stroke-width="1" stroke-dasharray="3 5"/>';
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="'+(R*0.33)+'" fill="none" stroke="rgba(22,50,79,.1)" stroke-width="1" stroke-dasharray="3 5"/>';
+    /* 刻度 */
+    for (var t=0;t<36;t++){
+      var ta=t*Math.PI/18;
+      var r1=R-((t%9===0)?12:6), x1=CX+r1*Math.cos(ta), y1=CY+r1*Math.sin(ta);
+      var x2=CX+R*Math.cos(ta), y2=CY+R*Math.sin(ta);
+      s+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="rgba(22,50,79,.3)" stroke-width="1"/>';
+    }
+    /* 风羽 */
+    vals.forEach(function(v,i){
+      var a=(-90+i*45)*Math.PI/180;
+      var L=v*4.0;
+      var tipx=CX+L*Math.cos(a), tipy=CY+L*Math.sin(a);
+      var px=Math.cos(a+Math.PI/2), py=Math.sin(a+Math.PI/2);
+      var w1=10, w2=2.2, m=L*0.35;
+      var hot=(i===maxI);
+      var d='M'+(CX+px*w1)+','+(CY+py*w1)
+        +' L'+(CX+m*Math.cos(a)+px*w2)+','+(CY+m*Math.sin(a)+py*w2)
+        +' L'+tipx+','+tipy
+        +' L'+(CX+m*Math.cos(a)-px*w2)+','+(CY+m*Math.sin(a)-py*w2)
+        +' L'+(CX-px*w1)+','+(CY-py*w1)+' Z';
+      s+='<path class="feather" d="'+d+'" fill="'+(hot?'rgba(200,154,58,.85)':'rgba(62,97,127,.72)')+'" stroke="'+(hot?GOLD:NAVY)+'" stroke-width="'+(hot?1.8:1)+'" style="transform-origin:'+CX+'px '+CY+'px;'+(STATIC?'':'animation:fangrow .8s '+(i*0.08)+'s cubic-bezier(.2,.8,.2,1) both;')+'"/>';
+      /* 占比 */
+      var lr=Math.max(L+26, 64);
+      var lx=CX+lr*Math.cos(a), ly=CY+lr*Math.sin(a);
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12.5" font-weight="800" fill="'+(hot?'#B8892F':NAVY)+'" font-family="Georgia,serif">'+v+'%</text>';
+      /* 方位标签 */
+      var nl=R+30;
+      var nx=CX+nl*Math.cos(a), ny=CY+nl*Math.sin(a);
+      var anchor = Math.abs(Math.cos(a))>0.5 ? (Math.cos(a)>0?'start':'end') : 'middle';
+      s+='<text x="'+nx.toFixed(1)+'" y="'+(ny+4).toFixed(1)+'" text-anchor="'+anchor+'" font-size="12" font-weight="'+(hot?800:600)+'" fill="'+(hot?'#B8892F':'#51677E')+'">'+DIRS[i]+'</text>';
+    });
+    s+='<circle cx="'+CX+'" cy="'+CY+'" r="6" fill="'+NAVY+'"/>';
+    s+='<text x="'+CX+'" y="'+(CY+R+58)+'" text-anchor="middle" font-size="11.5" fill="'+INK3+'" letter-spacing="2">Q'+(q+1)+' · 最强风向：'+DIRS[maxI]+' '+vals[maxI]+'%</text>';
+    document.getElementById('compass').innerHTML=s;
+  }
+  document.querySelectorAll('#qpills .qpill').forEach(function(p){
+    p.addEventListener('click', function(){
+      document.querySelectorAll('#qpills .qpill').forEach(function(x){ x.classList.remove('on'); });
+      this.classList.add('on');
+      drawCompass(+this.dataset.q);
+    });
+  });
+  drawCompass(2);
+
+  /* ===== 月度罚金流 ===== */
+  (function(){
+    var vals=[1820,1540,2260,1980,1760,3420,2680,2340,2510];
+    var X0=34,X1=356,Y0=158,Y1=30, VMAX=3600;
+    function px(i){ return X0+(X1-X0)*i/(vals.length-1); }
+    function py(v){ return Y0-(Y0-Y1)*v/VMAX; }
+    var d=''; vals.forEach(function(v,i){ d+=(i?' L':'M')+px(i).toFixed(1)+','+py(v).toFixed(1); });
+    var s='<path d="'+d+' L'+px(vals.length-1)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(62,97,127,.14)"/>';
+    s+='<path id="sline" d="'+d+'" fill="none" stroke="'+STEEL+'" stroke-width="2.4" stroke-linecap="round"/>';
+    vals.forEach(function(v,i){
+      var hot=(i===5);
+      s+='<circle cx="'+px(i)+'" cy="'+py(v)+'" r="'+(hot?5.5:3.6)+'" fill="'+(hot?GOLD:'#FCFDFE')+'" stroke="'+(hot?GOLD:STEEL)+'" stroke-width="2"/>';
+      if (hot) s+='<text x="'+px(i)+'" y="'+(py(v)-12)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#B8892F" font-family="Georgia,serif">3,420</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+18)+'" text-anchor="middle" font-size="9.5" fill="'+INK3+'">'+(i+1)+'月</text>';
+    });
+    document.getElementById('stream').innerHTML=s;
+    var sl=document.getElementById('sline'), len=sl.getTotalLength();
+    if (!STATIC){
+      sl.style.strokeDasharray=len; sl.style.strokeDashoffset=len;
+      setTimeout(function(){ sl.style.transition='stroke-dashoffset 1.8s cubic-bezier(.2,.8,.2,1)'; sl.style.strokeDashoffset='0'; },300);
+    }
+  })();
+
+  /* ===== 素材篮定夺 ===== */
+  var decided=[false,false,false];
+  var pack=document.getElementById('packbtn');
+  function refreshPack(){
+    var n=decided.filter(Boolean).length;
+    document.getElementById('basketnote').innerHTML='已定夺 <b>'+n+'</b> / 3 张 · 生成素材包后：文书原文链接、占比数据、你的取舍理由一并打包。';
+    if (n===3){ pack.disabled=false; pack.classList.add('ready'); pack.textContent='📦 生成年度 PPT 素材包'; }
+    else { pack.disabled=true; pack.classList.remove('ready'); pack.textContent='先完成 3 张卡的定夺'; }
+  }
+  document.querySelectorAll('#casegrid .ccase').forEach(function(c){
+    c.querySelectorAll('.cbtn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var a=this.dataset.a, i=+c.dataset.i;
+        c.querySelectorAll('.cbtn').forEach(function(x){ x.classList.remove('on'); });
+        this.classList.add('on');
+        c.classList.toggle('doubt', a==='doubt');
+        c.classList.toggle('drop', a==='drop');
+        decided[i]=true;
+        refreshPack();
+      });
+    });
+  });
+  refreshPack();
+  pack.addEventListener('click', function(){
+    if (this.disabled) return;
+    this.textContent='✓ 素材包已生成 · 智充 09:26 留痕';
+    this.disabled=true; this.style.opacity=.7;
+    toast('素材包已打包 · 取舍理由回流推荐排序');
+  });
+
+  /* ===== 研判命中率 55 → 80% ===== */
+  (function(){
+    var pts=[[55,"Q4·24"],[63,'Q1'],[72,'Q2'],[80,'Q3']];
+    var X0=40,X1=312,Y0=150,Y1=34;
+    function px(i){ return X0+(X1-X0)*i/3; }
+    function py(v){ return Y0-(Y0-Y1)*(v-45)/(90-45); }
+    var d=''; pts.forEach(function(p,i){ d+=(i?' L':'M')+px(i)+','+py(p[0]).toFixed(1); });
+    var s='<path d="'+d+' L'+px(3)+','+Y0+' L'+px(0)+','+Y0+' Z" fill="rgba(62,97,127,.1)"/>';
+    s+='<path id="gline" d="'+d+'" fill="none" stroke="'+STEEL+'" stroke-width="2.6" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+px(i)+'" cy="'+py(p[0])+'" r="4.4" fill="'+(i===3?STEEL:'#FCFDFE')+'" stroke="'+STEEL+'" stroke-width="2"/>';
+      s+='<text x="'+px(i)+'" y="'+(py(p[0])-11)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#1B2E44" font-family="Georgia,serif">'+p[0]+'%</text>';
+      s+='<text x="'+px(i)+'" y="'+(Y0+19)+'" text-anchor="middle" font-size="10" fill="'+INK3+'">'+p[1]+'</text>';
+    });
+    document.getElementById('growth').innerHTML=s;
+    var gl=document.getElementById('gline'), len=gl.getTotalLength();
+    if (!STATIC){
+      gl.style.strokeDasharray=len; gl.style.strokeDashoffset=len;
+      setTimeout(function(){ gl.style.transition='stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)'; gl.style.strokeDashoffset='0'; },300);
+    }
+  })();
+
+  /* 合环大环 */
+  (function(){
+    var cx=105, cy=105, r=82, s='';
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(22,50,79,.2)" stroke-width="1.4"/>';
+    for (var i=0;i<6;i++){
+      var a=-Math.PI/2+i*Math.PI/3;
+      var x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      var lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a);
+      s+='<circle class="fn" data-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7" fill="#C2D2E0" stroke="#FCFDFE" stroke-width="2"/>';
+      s+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#51677E">'+LOOP[i]+'</text>';
+    }
+    document.getElementById('bigring').innerHTML=s;
+  })();
+  function lightFinale(){
+    document.querySelectorAll('#bigring .fn').forEach(function(n,i){
+      setTimeout(function(){
+        n.setAttribute('fill', i===LIT ? GREEN : GOLD);
+        n.style.transition='fill .5s';
+      }, STATIC?0:i*260);
+    });
+  }
+
+  /* 出现动画 */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      if (e.target.querySelector && e.target.querySelector('#bigring')) lightFinale();
+      io.unobserve(e.target);
+    });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  if (STATIC){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+    lightFinale();
+  }
+})();
+</script>
+<style>@keyframes fangrow{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}</style>
+</body>
+</html>
